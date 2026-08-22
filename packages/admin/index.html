@@ -5,12 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex,nofollow" />
     <title>书房 · 后台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
     <script>
-      // 防 FOUC：主题在首帧前定好
+      // 防 FOUC：主题与界面风格在首帧前定好（与前台共用 localStorage 键）
       (function () {
         var t = localStorage.getItem("blog-theme");
         if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         document.documentElement.dataset.theme = t;
+        var s = localStorage.getItem("blog-skin");
+        if (s === "observatory") document.documentElement.dataset.skin = s;
       })();
     </script>
   </head>

@@ -49,6 +49,7 @@ export interface SiteInfo {
   mastheadIntro: string;
   footerNote: string;
   social: { label: string; url: string }[];
+  skin: string;
 }
 
 export interface TagStat {
@@ -93,6 +94,7 @@ export async function getData(): Promise<{
     mastheadIntro: site.mastheadIntro ?? "",
     footerNote: site.footerNote ?? "",
     social: site.social ?? [],
+    skin: site.skin === "observatory" ? "observatory" : "journal",
   };
   cache = { posts, domains: structure.domains, topics: structure.topics, site: siteInfo, tags };
   return cache;

@@ -37,19 +37,25 @@ const isHere = (href: string) =>
     <div class="masthead__side">
       <nav class="masthead__nav" aria-label="主导航">
         {nav.map((item) => (
-        <a
-          href={item.href}
-          class:list={["masthead__link", { "is-here": isHere(item.href) }]}
-        >
-          {item.label}
-        </a>
-      ))}
-      <a href="#search" class="masthead__link" data-search-open>搜索</a>
+          <a
+            href={item.href}
+            class:list={["masthead__link", { "is-here": isHere(item.href) }]}
+          >
+            {item.label}
+          </a>
+        ))}
+        <a href="#search" class="masthead__link" data-search-open>搜索</a>
       </nav>
-      <button class="masthead__theme" type="button" data-theme-toggle aria-label="切换深浅色">
-        <span data-theme-label-on>浅色</span>
-        <span data-theme-label-off hidden>深色</span>
-      </button>
+      <div class="masthead__modes">
+        <button class="masthead__skin" type="button" data-skin-toggle aria-label="切换界面风格" title="切换界面风格（手帐 / 观星台）">
+          <span data-skin-label-on>手帐</span>
+          <span data-skin-label-off hidden>观星台</span>
+        </button>
+        <button class="masthead__theme" type="button" data-theme-toggle aria-label="切换深浅色">
+          <span data-theme-label-on>浅色</span>
+          <span data-theme-label-off hidden>深色</span>
+        </button>
+      </div>
     </div>
   </div>
 </header>
@@ -179,6 +185,12 @@ const isHere = (href: string) =>
   .masthead__link.is-here:hover {
     transform: translateY(-2px) rotate(-1deg);
   }
+  .masthead__modes {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs);
+  }
+  .masthead__skin,
   .masthead__theme {
     border: 1px dashed var(--color-rule-strong);
     background: var(--color-paper-2);
@@ -194,6 +206,7 @@ const isHere = (href: string) =>
       border-color var(--dur-short) var(--ease-out),
       transform var(--dur-short) var(--ease-out);
   }
+  .masthead__skin:hover,
   .masthead__theme:hover {
     color: var(--color-ink);
     border-color: var(--color-ink);

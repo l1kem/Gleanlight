@@ -26,6 +26,7 @@ const site = reactive<SettingsPayload["site"]>({
   mastheadIntro: "",
   footerNote: "",
   social: [],
+  skin: "journal",
 });
 const ai = reactive<SettingsPayload["ai"]>({ baseUrl: "", model: "", apiKey: "", hasKey: false });
 const publish = reactive<SettingsPayload["publish"]>({ adapter: "local", localDir: "" });
@@ -133,6 +134,14 @@ function addSocial(): void {
           <button class="btn btn-sm btn-danger" type="button" @click="site.social.splice(i, 1)">删</button>
         </div>
         <button class="btn btn-sm" type="button" @click="addSocial">+ 添加</button>
+      </div>
+      <div class="field">
+        <label for="s-skin">默认界面风格</label>
+        <select id="s-skin" v-model="site.skin" class="select">
+          <option value="journal">手帐（米黄纸 · 文楷 · 砖红）</option>
+          <option value="observatory">观星台（深靛夜幕 · 星光金 · 竖排侧栏）</option>
+        </select>
+        <span class="hint">访客默认看到的风格；访客可在前台右上角自行切换（只记在自己的浏览器里）</span>
       </div>
       <button class="btn" type="button" :data-loading="savingSite" @click="saveSite">保存站点设置</button>
     </section>

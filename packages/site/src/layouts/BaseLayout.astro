@@ -5,6 +5,7 @@ import Footer from "../components/Footer.astro";
 import SearchDialog from "../components/SearchDialog.astro";
 import { getData } from "../lib/data";
 import "../styles/global.css";
+import "../styles/observatory.css";
 
 interface Props {
   title?: string;
@@ -14,6 +15,7 @@ interface Props {
 const { site, posts } = await getData();
 const { title, description } = Astro.props;
 const pageTitle = title ? `${title} · ${site.title}` : `${site.title} · ${site.description}`;
+const defaultSkin = site.skin; // journal | observatory（站长默认；访客 localStorage 覆盖）
 // 轻量搜索索引（标题/摘要/标签；全文检索二期接 pagefind）
 const searchIndex = posts.map((p) => ({
   slug: p.slug,
@@ -38,24 +40,27 @@ const searchIndex = posts.map((p) => ({
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    {/* 手帐字体：霞鹜文楷（CDN 失效时回退系统楷体）+ 代码用 JetBrains Mono */}
+    {/* 手帐字体：霞鹜文楷（CDN 失效时回退系统楷体）；观星台用 Noto Sans SC；代码用 JetBrains Mono */}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1/style.css" />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400&display=swap"
       rel="stylesheet"
     />
     <ClientRouter />
-    <script is:inline>
-      // 防主题闪烁：首帧前锁定 data-theme；同时标记 js 供滚动显现降级
+    <script define:vars={{ defaultSkin }}>
+      // 防闪烁：首帧前锁定 data-theme / data-skin；同时标记 js 供滚动显现降级
       (function () {
         var t = localStorage.getItem("blog-theme");
         if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         document.documentElement.dataset.theme = t;
+        document.documentElement.dataset.skin = localStorage.getItem("blog-skin") || defaultSkin;
         document.documentElement.classList.add("js");
-        // 软导航（ClientRouter swap）不重跑首帧脚本，换页后在此恢复主题
+        // 软导航（ClientRouter swap）不重跑首帧脚本，换页后在此恢复
         document.addEventListener("astro:after-swap", function () {
-          document.documentElement.dataset.theme = localStorage.getItem("blog-theme") || t;
-          document.documentElement.classList.add("js");
+          var root = document.documentElement;
+          root.dataset.theme = localStorage.getItem("blog-theme") || t;
+          root.dataset.skin = localStorage.getItem("blog-skin") || defaultSkin;
+          root.classList.add("js");
         });
       })();
     </script>
@@ -137,6 +142,27 @@ const searchIndex = posts.map((p) => ({
         },
         { passive: true },
       );
+      document.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-skin-toggle]");
+        if (!btn) return;
+        var root = document.documentElement;
+        var next = root.dataset.skin === "observatory" ? "journal" : "observatory";
+        root.dataset.skin = next;
+        localStorage.setItem("blog-skin", next);
+        syncSkinLabels();
+      });
+
+      function syncSkinLabels(): void {
+        var obs = document.documentElement.dataset.skin === "observatory";
+        document.querySelectorAll("[data-skin-toggle]").forEach(function (btn) {
+          var on = btn.querySelector("[data-skin-label-on]");
+          var off = btn.querySelector("[data-skin-label-off]");
+          if (on && off) {
+            on.hidden = obs; // 当前是观星台 → 显示「手帐」（切回目标）
+            off.hidden = !obs;
+          }
+        });
+      }
       onPageLoad();
     </script>
   </body>
