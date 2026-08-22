@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 # ── 构建阶段：安装依赖 + 构建后台 SPA ──────────────────────────
 FROM node:22-bookworm-slim AS builder
 
