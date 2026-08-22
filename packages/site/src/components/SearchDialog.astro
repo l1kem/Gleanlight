@@ -150,8 +150,11 @@ const { index } = Astro.props;
   .search-layer {
     position: fixed;
     inset: 0;
-    z-index: var(--z-modal);
-    background: oklch(20% 0.01 60 / 0.4);
+    z-index: calc(var(--z-modal) + 50); /* 盖过悬浮玻璃导航等一切固定元素 */
+    background: oklch(20% 0.01 60 / 0.45);
+    /* 背景整体模糊压暗：弹层后的内容不再透出叠影 */
+    backdrop-filter: blur(10px) saturate(0.9);
+    -webkit-backdrop-filter: blur(10px) saturate(0.9);
     display: flex;
     justify-content: center;
     align-items: flex-start;
