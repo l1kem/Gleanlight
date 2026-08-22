@@ -22,6 +22,9 @@ export const ADMIN_DIST = path.join(PKG_ADMIN, "dist");
 export const HOST = process.env.BLOG_HOST ?? "127.0.0.1";
 export const PORT = Number(process.env.BLOG_PORT ?? 7300);
 
+/** 前台静态托管端口（public-dist）；设为 0 可禁用 */
+export const FRONT_PORT = Number(process.env.BLOG_FRONT_PORT ?? 7301);
+
 function ensureJwtSecret(): string {
   if (process.env.BLOG_JWT_SECRET) return process.env.BLOG_JWT_SECRET;
   const file = path.join(DATA_DIR, ".jwt-secret");

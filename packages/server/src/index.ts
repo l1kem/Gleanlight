@@ -8,10 +8,12 @@ import fs from "node:fs";
 import {
   HOST,
   PORT,
+  FRONT_PORT,
   JWT_SECRET,
   COOKIE_NAME,
   MEDIA_DIR,
   ADMIN_DIST,
+  PUBLIC_DIST,
   ROOT,
 } from "./config.js";
 import { authRoutes } from "./routes/auth.js";
@@ -106,6 +108,33 @@ async function main(): Promise<void> {
   await app.listen({ host: HOST, port: PORT });
   app.log.info(`Gleanlight 已启动：http://${HOST}:${PORT}`);
   app.log.info(`仓库根目录：${ROOT}`);
+
+  // ── 前台静态站：独立端口托管 public-dist，发布后即更新 ────────
+  // 部署时可只放行此端口对外，后台端口留在防火墙内。
+  if (FRONT_PORT > 0) {
+    const front = Fastify({ logger: false });
+    if (fs.existsSync(PUBLIC_DIST)) {
+      await front.register(fastifyStatic, { root: PUBLIC_DIST, prefix: "/" });
+      front.setNotFoundHandler(async (req, reply) => {
+        // 带扩展名的资源路径直接 404，页面路径回退到首页
+        if (/\.[a-zA-Z0-9]+$/.test(req.url.split("?")[0])) {
+          return reply.code(404).send("Not Found");
+        }
+        return reply.sendFile("index.html");
+      });
+    } else {
+      front.get("/", async (_req, reply) =>
+        reply
+          .type("text/html; charset=utf-8")
+          .send(
+            "<!doctype html><meta charset='utf-8'><title>拾光集</title>" +
+              "<p>前台还没有内容：到后台点一次「发布」，然后刷新本页。</p>"
+          )
+      );
+    }
+    await front.listen({ host: HOST, port: FRONT_PORT });
+    app.log.info(`前台静态站：http://${HOST}:${FRONT_PORT}`);
+  }
 
   // 定时发布扫描：每分钟检查到点的定时草稿 → 转已发布并触发构建
   const timer = setInterval(() => {

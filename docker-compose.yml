@@ -2,9 +2,10 @@
 #
 #   docker compose up -d --build
 #
+#   前台          http://<host>:4321  （发布后的静态站）
 #   后台          http://<host>:7300
 #   数据/备份     ./docker-data  （SQLite + 附件，拷走即迁移）
-#   发布产物      ./public-dist  （纯静态，可交给 Nginx/CDN 托管）
+#   发布产物      ./public-dist  （纯静态，也可直接交给 Nginx/CDN 托管）
 #   初始账号      首次启动自动创建；随机密码见 `docker compose logs`
 #                 也可在下方 environment 预设 ADMIN_USER / ADMIN_PASSWORD
 
@@ -15,10 +16,12 @@ services:
     container_name: gleanlight
     restart: unless-stopped
     ports:
-      - "7300:7300"
+      - "7300:7300"   # 后台（部署时建议只对内网开放）
+      - "4321:7301"   # 前台静态站（可对外）
     environment:
       BLOG_HOST: 0.0.0.0
       BLOG_PORT: "7300"
+      BLOG_FRONT_PORT: "7301"
       BLOG_DATA_DIR: /data
       # BLOG_SITE_URL: https://your-domain.example   # RSS / sitemap 绝对地址
       # ADMIN_USER: admin

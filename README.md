@@ -82,9 +82,11 @@ pnpm dev:site     # Astro      → http://localhost:4321
 docker compose up -d --build
 ```
 
+- 前台：`http://<host>:4321`（发布后的静态站，容器内由独立端口托管，发布后刷新即更新）
 - 后台：`http://<host>:7300`
 - 数据（SQLite + 附件）：挂载在 `./docker-data`，**备份 = 拷贝这个目录**
-- 发布产物：挂载在 `./public-dist`，可用 Nginx / Caddy 直接托管
+- 发布产物：挂载在 `./public-dist`；自带的前台端口够日常使用，流量大时也可改用 Nginx / Caddy 直接托管该目录
+- 对外部署时只放行前台端口，后台端口用防火墙留在内网
 - 首次启动自动初始化；可用环境变量预设账号（见 `docker-compose.yml`）：
 
 ```yaml
