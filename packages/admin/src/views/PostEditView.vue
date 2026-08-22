@@ -63,6 +63,7 @@ const editorRef = ref<InstanceType<typeof Editor>>();
 const saving = ref(false);
 const dirty = ref(false);
 const savedAt = ref("");
+const ready = ref(false); // 编辑器等数据就绪后再挂载，避免空初始化
 const aiBusy = ref("");
 const titleCandidates = ref<string[]>([]);
 const tagCandidates = ref<string[]>([]);
@@ -103,6 +104,7 @@ onMounted(async () => {
     savedAt.value = p.updated_at ?? "";
     void loadRevisions();
   }
+  ready.value = true;
   window.addEventListener("blog-open-preview", openPreview);
   window.addEventListener("keydown", onKeydown);
   window.addEventListener("beforeunload", onBeforeUnload);
@@ -362,7 +364,8 @@ const domainOf = (domainId: number) => kb.value.domains.find((d) => d.id === dom
           placeholder="标题"
           @input="markDirty"
         />
-        <Editor ref="editorRef" v-model="form.content_md" @update:model-value="markDirty" />
+        <Editor v-if="ready" ref="editorRef" v-model="form.content_md" @update:model-value="markDirty" />
+        <div v-else class="edit__placeholder muted small">正在载入…</div>
 
         <section class="ai-panel">
           <h2 class="ai-panel__title">AI 助手</h2>

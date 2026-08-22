@@ -5,7 +5,7 @@
  *  - 可切「即时渲染」(ir)：光标处直接渲染，即 Typora 主模式
  *  - 粘贴/上传图片直传媒体库；主题跟随站点明暗
  */
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Vditor from "vditor";
 import { api } from "../api";
 import { toastError } from "../toast";
@@ -94,6 +94,18 @@ function init(mode: "sv" | "ir"): void {
 
 onMounted(() => init(currentMode.value));
 onBeforeUnmount(() => vd?.destroy());
+
+// 外部赋值（文章异步加载/版本回滚/AI 改写）同步进编辑器。
+// 编辑器聚焦中视为用户输入态，跳过回写，避免打字时 setValue 打断光标
+watch(
+  () => props.modelValue,
+  (v) => {
+    if (!vd || v === vd.getValue()) return;
+    const active = document.activeElement;
+    if (active && el.value?.contains(active)) return;
+    vd.setValue(v);
+  }
+);
 
 function setMode(mode: "sv" | "ir"): void {
   if (mode === currentMode.value) return;
