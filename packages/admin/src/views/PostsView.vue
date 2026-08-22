@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { api } from "../api";
+import AppSelect from "../components/AppSelect.vue";
 import { toast, toastError } from "../toast";
 
 interface PostListItem {
@@ -22,6 +23,20 @@ const list = reactive<{ items: PostListItem[]; total: number }>({ items: [], tot
 const filter = reactive({ status: "", q: "", topic_id: "" });
 const kb = ref<KbTree>({ domains: [], topics: [] });
 const loading = ref(true);
+
+const statusOptions = [
+  { value: "", label: "全部状态" },
+  { value: "published", label: "已发布" },
+  { value: "draft", label: "草稿" },
+];
+const topicOptions = computed(() => [
+  { value: "", label: "全部分类" },
+  ...kb.value.topics.map((t) => ({
+    value: t.id as number | "",
+    label: t.name,
+    group: kb.value.domains.find((d) => d.id === t.domain_id)?.name ?? "未分组",
+  })),
+]);
 
 async function load(): Promise<void> {
   loading.value = true;
@@ -65,27 +80,8 @@ async function remove(p: PostListItem): Promise<void> {
     <header class="page-head">
       <h1>文章</h1>
       <div class="actions">
-        <select v-model="filter.status" class="select select--inline" @change="load">
-          <option value="">全部状态</option>
-          <option value="published">已发布</option>
-          <option value="draft">草稿</option>
-        </select>
-        <select v-model="filter.topic_id" class="select select--inline" @change="load">
-          <option value="">全部分类</option>
-          <optgroup
-            v-for="d in kb.domains"
-            :key="d.id"
-            :label="d.name"
-          >
-            <option
-              v-for="t in kb.topics.filter((t) => t.domain_id === d.id)"
-              :key="t.id"
-              :value="t.id"
-            >
-              {{ t.name }}
-            </option>
-          </optgroup>
-        </select>
+        <AppSelect v-model="filter.status" :options="statusOptions" inline @change="load" />
+        <AppSelect v-model="filter.topic_id" :options="topicOptions" inline @change="load" />
         <form @submit.prevent="load">
           <input v-model="filter.q" class="input input--inline" type="search" placeholder="搜索标题/摘要" />
         </form>
@@ -136,8 +132,5 @@ async function remove(p: PostListItem): Promise<void> {
 <style scoped>
 .input--inline {
   width: 12rem;
-}
-.select--inline {
-  width: auto;
 }
 </style>

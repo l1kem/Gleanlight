@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { api } from "../api";
+import AppSelect from "../components/AppSelect.vue";
 import { toast, toastError } from "../toast";
 
 interface Domain {
@@ -45,6 +46,9 @@ const health = ref<Health | null>(null);
 const expanded = ref<Set<number>>(new Set());
 const newDomain = reactive({ name: "", description: "" });
 const newTopic = reactive({ domain_id: null as number | null, name: "", description: "" });
+const domainSelectOptions = computed(() =>
+  domains.value.map((d) => ({ value: d.id as number | null, label: d.name }))
+);
 const editing = ref<Record<string, string>>({}); // 'd12'/'t7' -> 进行中的重命名
 
 // ── 本地知识库导入（只读源目录，拷贝副本入库）─────────────────
@@ -453,10 +457,7 @@ async function remove(kind: "domains" | "topics", id: number, name: string): Pro
         <h2>新增主题</h2>
         <div class="field">
           <label for="tdomain">所属知识域</label>
-          <select id="tdomain" v-model="newTopic.domain_id" class="select">
-            <option :value="null">请选择</option>
-            <option v-for="d in domains" :key="d.id" :value="d.id">{{ d.name }}</option>
-          </select>
+          <AppSelect v-model="newTopic.domain_id" :options="domainSelectOptions" />
         </div>
         <div class="field">
           <label for="tname">名称</label>

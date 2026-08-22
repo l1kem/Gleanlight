@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, reactive } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { auth, logout } from "./stores/auth";
+import { api } from "./api";
 import Toast from "./components/Toast.vue";
 import CommandPalette from "./components/CommandPalette.vue";
 
 const route = useRoute();
 const isPublic = computed(() => route.meta.public === true);
+const version = ref("");
 
 const nav = [
   {
@@ -68,6 +70,21 @@ async function onLogout(): Promise<void> {
 function dispatchPalette(): void {
   window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
 }
+
+async function loadVersion(): Promise<void> {
+  if (isPublic.value || version.value) return;
+  try {
+    const v = await api.get<{ current: string }>("/version");
+    version.value = v.current;
+  } catch {
+    /* 版本号拿不到就不显示 */
+  }
+}
+onMounted(loadVersion);
+// 登录页挂载时 isPublic 为真，登录成功后补取
+watch(isPublic, (pub) => {
+  if (!pub) void loadVersion();
+});
 </script>
 
 <template>
@@ -106,6 +123,7 @@ function dispatchPalette(): void {
           <button class="side__logout" type="button" @click="onLogout">退出登录</button>
         </div>
       </div>
+      <p v-if="version" class="side__ver">Gleanlight v{{ version }}</p>
     </aside>
 
     <div v-if="!isPublic" class="content">
@@ -290,6 +308,13 @@ function dispatchPalette(): void {
   text-align: left;
 }
 .side__logout:hover { color: oklch(70% 0.13 25); text-decoration: underline; }
+.side__ver {
+  margin: var(--space-xs) 0 0;
+  padding: 0 var(--space-sm);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--side-muted);
+}
 
 /* ── 内容区 + 顶部工具栏 ──────────────────────────────────── */
 .content {

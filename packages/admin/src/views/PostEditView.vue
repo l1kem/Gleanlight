@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { api } from "../api";
 import { toast, toastError } from "../toast";
 import Editor from "../components/Editor.vue";
+import AppSelect from "../components/AppSelect.vue";
 
 interface PostDetail {
   id: number;
@@ -328,6 +329,13 @@ async function openPreview(): Promise<void> {
 
 const topicOptions = computed(() => kb.value.topics);
 const domainOf = (domainId: number) => kb.value.domains.find((d) => d.id === domainId);
+const topicSelectOptions = computed(() =>
+  kb.value.topics.map((t) => ({
+    value: t.id as number | null,
+    label: `${domainOf(t.domain_id)?.name ?? "未分组"} / ${t.name}`,
+    group: domainOf(t.domain_id)?.name ?? "未分组",
+  }))
+);
 </script>
 
 <template>
@@ -447,12 +455,12 @@ const domainOf = (domainId: number) => kb.value.domains.find((d) => d.id === dom
         </div>
         <div class="field">
           <label for="topic">知识主题</label>
-          <select id="topic" v-model="form.topic_id" class="select" @change="markDirty">
-            <option :value="null">（不属于任何主题）</option>
-            <option v-for="t in topicOptions" :key="t.id" :value="t.id">
-              {{ domainOf(t.domain_id)?.name }} / {{ t.name }}
-            </option>
-          </select>
+          <AppSelect
+            v-model="form.topic_id"
+            :options="topicSelectOptions"
+            placeholder="（不属于任何主题）"
+            @change="markDirty"
+          />
           <span class="hint">主题内的阅读顺序由下方序号决定</span>
         </div>
         <div class="field field--row">

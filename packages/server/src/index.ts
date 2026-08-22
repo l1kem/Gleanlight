@@ -25,6 +25,7 @@ import { aiRoutes } from "./routes/ai.js";
 import { publishRoutes, promoteScheduledPosts } from "./routes/publish.js";
 import { statsRoutes } from "./routes/stats.js";
 import { wikiRoutes } from "./routes/wiki.js";
+import { versionRoutes } from "./routes/version.js";
 import { requireAuth } from "./auth.js";
 import { renderMarkdown, extractToc } from "@gleanlight/markdown";
 
@@ -76,6 +77,7 @@ async function main(): Promise<void> {
       await api.register(publishRoutes);
       await api.register(statsRoutes);
       await api.register(wikiRoutes);
+      await api.register(versionRoutes);
 
       // Markdown 预览（与前台渲染同规则）
       api.post(
