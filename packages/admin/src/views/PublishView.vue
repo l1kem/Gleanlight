@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { api } from "../api";
-import { toastError } from "../toast";
+import { toast, toastError } from "../toast";
 
 interface BuildItem {
   id: number;
@@ -67,6 +67,42 @@ async function publish(): Promise<void> {
   }
 }
 
+async function removeBuild(id: number): Promise<void> {
+  if (!window.confirm(`删除构建 #${id} 的记录？`)) return;
+  try {
+    await api.del(`/builds/${id}`);
+    void loadBuilds();
+  } catch (err) {
+    toastError(err);
+  }
+}
+
+async function clearHistory(): Promise<void> {
+  if (!window.confirm("清空全部构建历史（进行中的保留）？")) return;
+  try {
+    const { deleted } = await api.del<{ deleted: number }>("/builds");
+    toast(`已清理 ${deleted} 条记录`, "success");
+    void loadBuilds();
+  } catch (err) {
+    toastError(err);
+  }
+}
+
+/** 构建耗时（sqlite UTC 字符串 → 秒） */
+function duration(b: BuildItem): string {
+  if (b.status === "running") return "—";
+  if (!b.finished_at) return "—";
+  const start = Date.parse(`${b.created_at.replace(" ", "T")}Z`);
+  const end = Date.parse(`${b.finished_at.replace(" ", "T")}Z`);
+  if (Number.isNaN(start) || Number.isNaN(end)) return "—";
+  const sec = Math.max(0, Math.round((end - start) / 1000));
+  return sec < 60 ? `${sec}s` : `${Math.floor(sec / 60)}m${sec % 60}s`;
+}
+
+function fmtTime(t?: string | null): string {
+  return t ? t.slice(0, 19).replace("T", " ") : "—";
+}
+
 const statusText: Record<BuildItem["status"], string> = {
   running: "进行中",
   success: "成功",
@@ -97,26 +133,41 @@ const statusText: Record<BuildItem["status"], string> = {
     </section>
 
     <section class="panel">
-      <h2>构建历史</h2>
+      <div class="history-head">
+        <h2>构建历史（{{ builds.length }}）</h2>
+        <button v-if="builds.length" class="btn btn-sm" type="button" @click="clearHistory">清空历史</button>
+      </div>
       <table class="table" v-if="builds.length">
         <thead>
-          <tr><th>#</th><th>状态</th><th>适配器</th><th>时间</th><th></th></tr>
+          <tr><th>#</th><th>状态</th><th>适配器</th><th>开始时间</th><th>耗时</th><th>日志</th><th></th></tr>
         </thead>
         <tbody>
-          <tr v-for="b in builds" :key="b.id">
+          <tr v-for="b in builds" :key="b.id" :class="{ 'is-running': b.status === 'running' }">
             <td class="mono">{{ b.id }}</td>
             <td>
               <span class="badge" :class="`badge-${b.status === 'success' ? 'published' : b.status === 'failed' ? 'draft' : ''}`">
                 {{ statusText[b.status] }}
               </span>
             </td>
-            <td class="mono">{{ b.adapter }}</td>
-            <td class="muted small">{{ b.created_at?.slice(0, 19) }}</td>
+            <td class="mono small">{{ b.adapter }}</td>
+            <td class="muted small mono">{{ fmtTime(b.created_at) }}</td>
+            <td class="small">{{ duration(b) }}</td>
             <td>
               <details v-if="b.log">
-                <summary class="small">日志</summary>
+                <summary class="small">展开（{{ b.log.split("\n").length }} 行）</summary>
                 <pre class="build-log mono">{{ b.log }}</pre>
               </details>
+              <span v-else class="muted small">—</span>
+            </td>
+            <td>
+              <button
+                v-if="b.status !== 'running'"
+                class="btn btn-sm btn-danger"
+                type="button"
+                @click="removeBuild(b.id)"
+              >
+                删除
+              </button>
             </td>
           </tr>
         </tbody>
@@ -141,6 +192,14 @@ python3 -m http.server -d {{ publicDist }} 8000</pre>
 </template>
 
 <style scoped>
+.history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+.history-head h2 { margin: 0; }
+.is-running td { opacity: 0.75; }
 .build-log {
   max-height: 18rem;
   overflow: auto;

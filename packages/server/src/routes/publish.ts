@@ -38,6 +38,24 @@ export async function publishRoutes(app: FastifyInstance): Promise<void> {
     if (!row) return reply.code(404).send({ error: "构建不存在" });
     return row;
   });
+
+  // 删除单条构建记录（进行中的不允许删）
+  app.delete("/builds/:id", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const row = db.prepare("SELECT status FROM builds WHERE id = ?").get(Number(id)) as
+      | { status: string }
+      | undefined;
+    if (!row) return reply.code(404).send({ error: "构建不存在" });
+    if (row.status === "running") return reply.code(409).send({ error: "构建进行中，不能删除" });
+    db.prepare("DELETE FROM builds WHERE id = ?").run(Number(id));
+    return { ok: true };
+  });
+
+  // 清空历史（保留进行中的）
+  app.delete("/builds", async () => {
+    const info = db.prepare("DELETE FROM builds WHERE status != 'running'").run();
+    return { ok: true, deleted: info.changes };
+  });
 }
 
 /**

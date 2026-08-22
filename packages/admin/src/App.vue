@@ -110,7 +110,7 @@ function dispatchPalette(): void {
 
     <div v-if="!isPublic" class="content">
       <header class="topbar">
-        <h1 class="topbar__title">{{ currentPage }}</h1>
+        <p class="topbar__crumb">{{ currentPage }}</p>
         <div class="topbar__actions">
           <button class="topbar__search" type="button" title="搜索（⌘K）" @click="dispatchPalette">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
@@ -219,7 +219,7 @@ function dispatchPalette(): void {
   gap: var(--space-sm);
   padding: var(--space-2xs) var(--space-sm);
   border-radius: var(--radius-sm);
-  color: oklch(78% 0.01 265);
+  color: var(--color-muted);
   font-size: var(--text-sm);
   font-weight: 500;
   text-decoration: none;
@@ -306,10 +306,11 @@ function dispatchPalette(): void {
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-rule);
 }
-.topbar__title {
+.topbar__crumb {
   margin: 0;
-  font-size: var(--text-md);
-  font-weight: 600;
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  color: var(--color-neutral);
 }
 .topbar__actions {
   display: flex;
