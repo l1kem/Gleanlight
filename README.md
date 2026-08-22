@@ -139,7 +139,6 @@ design.md       # 设计系统说明
 
 ## 路线图
 
-- [ ] 发布适配器：rsync / S3 / Cloudflare Pages
 - [ ] 全文检索（Pagefind）
 - [ ] KaTeX / Mermaid 渲染
 - [ ] WebP 自动压缩、TOTP 两步验证
