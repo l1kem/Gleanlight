@@ -1,0 +1,150 @@
+---
+import { ClientRouter } from "astro:transitions";
+import Masthead from "../components/Masthead.astro";
+import Footer from "../components/Footer.astro";
+import SearchDialog from "../components/SearchDialog.astro";
+import { getData } from "../lib/data";
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { site, posts } = await getData();
+const { title, description } = Astro.props;
+const pageTitle = title ? `${title} · ${site.title}` : `${site.title} · ${site.description}`;
+// 轻量搜索索引（标题/摘要/标签；全文检索二期接 pagefind）
+const searchIndex = posts.map((p) => ({
+  slug: p.slug,
+  title: p.title,
+  summary: p.summary,
+  tags: p.tags,
+  topic: p.topicName,
+  date: p.publishedAt?.slice(0, 10) ?? "",
+}));
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description ?? site.description} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="alternate" type="application/rss+xml" title={site.title} href="/rss.xml" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    {/* 手帐字体：霞鹜文楷（CDN 失效时回退系统楷体）+ 代码用 JetBrains Mono */}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1/style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+    <ClientRouter />
+    <script is:inline>
+      // 防主题闪烁：首帧前锁定 data-theme；同时标记 js 供滚动显现降级
+      (function () {
+        var t = localStorage.getItem("blog-theme");
+        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = t;
+        document.documentElement.classList.add("js");
+        // 软导航（ClientRouter swap）不重跑首帧脚本，换页后在此恢复主题
+        document.addEventListener("astro:after-swap", function () {
+          document.documentElement.dataset.theme = localStorage.getItem("blog-theme") || t;
+          document.documentElement.classList.add("js");
+        });
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="progress" aria-hidden="true"></div>
+    <Masthead site={site} postCount={posts.length} />
+    <main class="container main">
+      <slot />
+    </main>
+    <Footer site={site} />
+    <SearchDialog index={searchIndex} />
+    <script>
+      // 主题切换（刊头按钮；与后台共用同一 localStorage 键）
+      function syncThemeLabels(): void {
+        var dark = document.documentElement.dataset.theme === "dark";
+        document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
+          var on = btn.querySelector("[data-theme-label-on]");
+          var off = btn.querySelector("[data-theme-label-off]");
+          if (on && off) {
+            on.hidden = !dark;
+            off.hidden = dark;
+          }
+        });
+      }
+      document.addEventListener("click", function (e) {
+        var btn = (e.target as Element).closest("[data-theme-toggle]");
+        if (!btn) return;
+        var root = document.documentElement;
+        var next = root.dataset.theme === "dark" ? "light" : "dark";
+        root.dataset.theme = next;
+        localStorage.setItem("blog-theme", next);
+        syncThemeLabels();
+      });
+
+      // 滚动显现：进入视口时加 .is-in（一次性），无 IO 则直接全显
+      function initReveal(): void {
+        var els = document.querySelectorAll(
+          ".reveal:not(.is-in), .reveal-fade:not(.is-in), .reveal-stagger:not(.is-in)",
+        );
+        if (!("IntersectionObserver" in window)) {
+          els.forEach(function (el) {
+            el.classList.add("is-in");
+          });
+          return;
+        }
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-in");
+                io.unobserve(entry.target);
+              }
+            });
+          },
+          { rootMargin: "0px 0px -8% 0px", threshold: 0.05 },
+        );
+        els.forEach(function (el) {
+          io.observe(el);
+        });
+      }
+
+      // 吸顶纸条滚动投影
+      function syncScrolled(): void {
+        var m = document.querySelector("[data-masthead]");
+        if (m) m.classList.toggle("is-scrolled", window.scrollY > 8);
+      }
+
+      function onPageLoad(): void {
+        syncThemeLabels();
+        initReveal();
+        syncScrolled();
+      }
+      document.addEventListener("astro:page-load", onPageLoad);
+      window.addEventListener(
+        "scroll",
+        function () {
+          syncScrolled();
+        },
+        { passive: true },
+      );
+      onPageLoad();
+    </script>
+  </body>
+</html>
+
+<style>
+  .main {
+    margin-top: var(--space-2xl);
+    min-height: 50vh;
+  }
+</style>

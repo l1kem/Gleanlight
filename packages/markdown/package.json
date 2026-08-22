@@ -1,0 +1,21 @@
+{
+  "name": "@gleanlight/markdown",
+  "version": "0.1.0-beta.1",
+  "private": true,
+  "description": "共享 Markdown 渲染（前台构建与后台预览同规则：wikilink/高亮/目录提取）",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-task-lists": "^2.1.1"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "typescript": "^5.8.3"
+  }
+}

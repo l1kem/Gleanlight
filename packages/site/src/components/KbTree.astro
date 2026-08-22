@@ -1,0 +1,252 @@
+---
+/**
+ * 知识库文件树：左侧栏 · 域 → 主题 → 文章 三层 <details> 结构。
+ * 原生展开/收起（无 JS 可用）；当前域/主题服务端预展开并高亮。
+ */
+import { getData, topicPosts } from "../lib/data";
+
+interface Props {
+  currentTopicSlug?: string;
+  currentPostSlug?: string;
+}
+
+const { currentTopicSlug, currentPostSlug } = Astro.props;
+const { posts, domains, topics } = await getData();
+
+const tree = domains
+  .map((d) => ({
+    ...d,
+    topics: topics
+      .filter((t) => t.domain_id === d.id)
+      .map((t) => ({ ...t, posts: topicPosts(posts, t.id) })),
+  }))
+  .filter((d) => d.topics.length > 0);
+
+const currentTopic = currentTopicSlug
+  ? topics.find((t) => t.slug === currentTopicSlug)
+  : undefined;
+const currentDomainId = currentTopic?.domain_id ?? null;
+const fallbackOpenId = !currentTopic ? (tree[0]?.id ?? null) : null;
+---
+
+<nav class="kbtree reveal-fade" aria-label="知识库目录">
+  <p class="kbtree__title">目录</p>
+  {tree.map((d) => {
+    const open = d.id === currentDomainId || d.id === fallbackOpenId;
+    return (
+      <details class="kbtree__domain" open={open}>
+        <summary>
+          <span class="kbtree__chev" aria-hidden="true"></span>
+          <span class="kbtree__domain-name">{d.name}</span>
+          <span class="kbtree__count">{d.topics.reduce((n, t) => n + t.posts.length, 0)}</span>
+        </summary>
+        <div class="kbtree__body">
+          {d.topics.map((t, j) => (
+            <details
+              class="kbtree__topic"
+              open={t.slug === currentTopicSlug}
+              style={`--i: ${Math.min(j, 8)}`}
+            >
+              <summary>
+                <span class="kbtree__chev" aria-hidden="true"></span>
+                <a
+                  class:list={["kbtree__topic-name", { "is-here": t.slug === currentTopicSlug }]}
+                  href={`/kb/${t.slug}`}
+                >
+                  {t.name}
+                </a>
+                <span class="kbtree__count">{t.posts.length}</span>
+              </summary>
+              <div class="kbtree__body">
+                <ul class="kbtree__files">
+                  {t.posts.map((p, k) => (
+                    <li style={`--i: ${Math.min(k, 8)}`}>
+                      <a
+                        class:list={["kbtree__file", { "is-here": p.slug === currentPostSlug }]}
+                        href={`/posts/${p.slug}`}
+                      >
+                        {p.title}
+                      </a>
+                    </li>
+                  ))}
+                  {t.posts.length === 0 && <li class="kbtree__empty">待编入</li>}
+                </ul>
+              </div>
+            </details>
+          ))}
+        </div>
+      </details>
+    );
+  })}
+  {tree.length === 0 && <p class="kbtree__empty">知识库还是空的——从后台建立第一个知识域开始。</p>}
+</nav>
+
+<style>
+  .kbtree {
+    position: sticky;
+    top: 4.75rem;
+    max-height: calc(100vh - 6.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-md);
+    background: var(--color-paper-2);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-paper);
+    scrollbar-width: thin;
+  }
+  .kbtree__title {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--text-sm);
+    letter-spacing: 0.12em;
+    color: var(--color-ink-strong);
+    text-decoration: underline wavy var(--color-accent);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.3em;
+  }
+
+  .kbtree summary {
+    display: flex;
+    align-items: center;
+    gap: 0.45em;
+    padding: var(--space-2xs) var(--space-2xs);
+    border-radius: var(--radius-sm);
+    color: var(--color-ink);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    transition: background-color var(--dur-short) var(--ease-out);
+  }
+  .kbtree summary::-webkit-details-marker {
+    display: none;
+  }
+  .kbtree summary:hover {
+    background: var(--color-paper-3);
+  }
+  .kbtree summary:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+  }
+
+  /* 折纸箭头：收起朝右、展开朝下 */
+  .kbtree__chev {
+    flex: none;
+    width: 0.5em;
+    height: 0.5em;
+    border-top: 1.5px solid var(--color-rule-strong);
+    border-right: 1.5px solid var(--color-rule-strong);
+    transform: rotate(45deg);
+    transition: transform var(--dur-short) var(--ease-out);
+  }
+  .kbtree details[open] > summary .kbtree__chev {
+    transform: rotate(135deg);
+  }
+
+  .kbtree__domain-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+  .kbtree__topic-name {
+    color: var(--color-ink);
+    text-decoration: none;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .kbtree__topic-name:hover {
+    color: var(--color-accent);
+  }
+  .kbtree .is-here {
+    color: var(--color-accent);
+    font-weight: 700;
+  }
+  .kbtree__count {
+    margin-left: auto;
+    flex: none;
+    font-size: var(--text-xs);
+    color: var(--color-neutral);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .kbtree__body {
+    padding-left: var(--space-sm);
+    margin-left: 0.55em;
+    border-left: 1px dashed var(--color-rule);
+  }
+  /* 展开 = 翻开一册：子项依次落纸 */
+  .kbtree details[open] > .kbtree__body > * {
+    animation: tree-in var(--dur-long) var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * 40ms);
+  }
+  @keyframes tree-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
+  /* 文章 = 纸页图标 + 链接 */
+  .kbtree__files {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .kbtree__file {
+    display: block;
+    padding: var(--space-3xs) var(--space-2xs) var(--space-3xs) 0.15em;
+    color: var(--color-muted);
+    text-decoration: none;
+    font-size: var(--text-xs);
+    line-height: 1.6;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: color var(--dur-short) var(--ease-out),
+      background-color var(--dur-short) var(--ease-out);
+  }
+  .kbtree__file::before {
+    content: "";
+    display: inline-block;
+    width: 0.55em;
+    height: 0.7em;
+    margin-right: 0.5em;
+    vertical-align: -0.05em;
+    border: 1px solid var(--color-rule-strong);
+    border-radius: 1px;
+    transition: background-color var(--dur-short) var(--ease-out),
+      border-color var(--dur-short) var(--ease-out);
+  }
+  .kbtree__file:hover {
+    color: var(--color-accent);
+    background: var(--color-paper-3);
+  }
+  .kbtree__file.is-here {
+    color: var(--color-accent);
+    background: var(--color-accent-wash);
+  }
+  .kbtree__file.is-here::before {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+  }
+  .kbtree__empty {
+    margin: 0;
+    padding: var(--space-3xs) var(--space-2xs);
+    font-size: var(--text-xs);
+    color: var(--color-neutral);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kbtree__chev {
+      transition: none;
+    }
+    .kbtree details[open] > .kbtree__body > * {
+      animation: none;
+    }
+  }
+</style>

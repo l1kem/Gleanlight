@@ -1,0 +1,613 @@
+/* Hallmark · genre: playful · macrostructure: Ecosystem Index (restyle) · theme: studied-DNA (source: image · 手帐)
+ * nav: N9 边缘对齐（右上贴纸页签 · 吸顶纸条） · footer: Ft6 书信收尾（猫涂鸦 + 邮戳）
+ * axes: light cream paper · kai-handwriting display/body · brick-red warm accent
+ * studied: yes · DNA-source: image (user reference ×3) · design-system: design.md
+ * 说明：色彩/字体在此覆盖共享 token；间距/层级/动效/布局 token 继续来自 @gleanlight/tokens。
+ * 动效系统（design.md「Motion」章）：滚动显现 / 视图过渡 / 胶带摆动 / 邮戳盖印 /
+ * 行缩进 / 进度条 / 文件树展开 —— 全部 transform+opacity，reduced-motion 全量降级。
+ */
+@import "@gleanlight/tokens/tokens.css";
+
+/* ── 手帐主题 · 覆盖层（纸本手帐）────────────────────────────── */
+:root {
+  /* 纸与墨：米黄纸 / 深棕墨 / 砖红朱砂 */
+  --color-paper:      oklch(96.5% 0.016 90);
+  --color-paper-2:    oklch(98.5% 0.012 95);
+  --color-paper-3:    oklch(93.5% 0.020 88);
+  --color-rule:       oklch(86% 0.015 85);
+  --color-rule-strong: oklch(72% 0.025 70);
+  --color-neutral:    oklch(50% 0.025 65);
+  --color-muted:      oklch(42% 0.028 60);
+  --color-ink:        oklch(29% 0.024 55);
+  --color-ink-strong: oklch(23% 0.028 52);
+  --color-accent:     oklch(57% 0.135 33);
+  --color-accent-ink: oklch(48% 0.140 32);
+  --color-accent-wash: oklch(93% 0.040 45);
+  --color-focus:      oklch(57% 0.135 33);
+  --color-danger:     oklch(52% 0.170 25);
+  --color-success:    oklch(50% 0.120 150);
+  --color-selection-bg: oklch(92% 0.050 50);
+  --color-sticky:     oklch(94% 0.060 95);   /* 便利贴 */
+
+  /* 和纸胶带（不透明 token；半透明感由 .tape 的 opacity 承担） */
+  --tape-red:    oklch(85% 0.070 30);
+  --tape-green:  oklch(86% 0.060 140);
+  --tape-blue:   oklch(86% 0.055 240);
+  --tape-lilac:  oklch(87% 0.050 310);
+  --tape-honey:  oklch(88% 0.090 90);
+
+  /* 字体 2+1：霞鹜文楷（display+body，回退系统楷体）· JetBrains Mono（仅代码） */
+  --font-display: "LXGW WenKai", "LXGW WenKai Lite", "Kaiti SC", "STKaiti", "KaiTi", "Noto Serif SC", serif;
+  --font-body: "LXGW WenKai", "LXGW WenKai Lite", "Kaiti SC", "STKaiti", "KaiTi", "PingFang SC", "Microsoft YaHei", serif;
+
+  /* 楷体需要更宽松的行距 */
+  --leading-tight: 1.2;
+  --leading-snug: 1.5;
+  --leading-body: 1.9;
+
+  /* 纸片形状与深度：单层软阴影，圆角上限 12px */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-card: 12px;
+  --radius-pill: 999px;
+  --shadow-paper: 0 2px 8px -2px color-mix(in oklch, var(--color-ink) 24%, transparent);
+}
+
+/* ── 夜帐 · 深色（同锚色相，仅动明度/彩度）────────────────────── */
+[data-theme="dark"] {
+  --color-paper:      oklch(18% 0.012 70);
+  --color-paper-2:    oklch(22% 0.014 72);
+  --color-paper-3:    oklch(26% 0.016 72);
+  --color-rule:       oklch(32% 0.015 70);
+  --color-rule-strong: oklch(46% 0.020 65);
+  --color-neutral:    oklch(66% 0.015 75);
+  --color-muted:      oklch(74% 0.012 78);
+  --color-ink:        oklch(90% 0.012 88);
+  --color-ink-strong: oklch(95% 0.010 90);
+  --color-accent:     oklch(70% 0.120 35);
+  --color-accent-ink: oklch(78% 0.100 35);
+  --color-accent-wash: oklch(30% 0.050 40);
+  --color-focus:      oklch(70% 0.120 35);
+  --color-danger:     oklch(66% 0.160 25);
+  --color-success:    oklch(68% 0.110 150);
+  --color-selection-bg: oklch(30% 0.050 40);
+  --color-sticky:     oklch(30% 0.050 95);
+
+  --tape-red:    oklch(38% 0.070 30);
+  --tape-green:  oklch(38% 0.060 140);
+  --tape-blue:   oklch(38% 0.055 240);
+  --tape-lilac:  oklch(40% 0.050 310);
+  --tape-honey:  oklch(42% 0.080 90);
+
+  --shadow-paper: 0 2px 8px -2px oklch(0% 0 0 / 0.45);
+}
+
+/* ── 基础 ────────────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background-color: var(--color-paper);
+  /* 点阵手帐纸纹 */
+  background-image: radial-gradient(color-mix(in oklch, var(--color-ink) 13%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-ink-strong);
+  letter-spacing: 0.02em;
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: var(--color-rule-strong);
+  transition: text-decoration-color var(--dur-short) var(--ease-out);
+}
+a:hover {
+  text-decoration-style: wavy;
+  text-decoration-color: var(--color-accent);
+}
+
+img { max-width: 100%; height: auto; }
+
+.container {
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ── 手帐装饰工具类 ──────────────────────────────────────────── */
+
+/* 和纸胶带：放于 position:relative 的卡片顶边，aria-hidden 纯装饰 */
+.tape {
+  position: absolute;
+  width: 5.25rem;
+  height: 1.5rem;
+  opacity: 0.68;
+  pointer-events: none;
+  border-radius: 1px;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--color-ink) 12%, transparent);
+  background-image: repeating-linear-gradient(90deg,
+    color-mix(in oklch, var(--color-paper-2) 45%, transparent) 0 1px,
+    transparent 1px 5px);
+}
+.tape--red    { background-color: var(--tape-red); }
+.tape--green  { background-color: var(--tape-green); }
+.tape--blue   { background-color: var(--tape-blue); }
+.tape--lilac  { background-color: var(--tape-lilac); }
+.tape--honey  { background-color: var(--tape-honey); }
+.tape--tc { top: -0.7rem; left: 50%; transform: translateX(-50%) rotate(-3deg); }
+.tape--tl { top: -0.55rem; left: -1rem; transform: rotate(-38deg); }
+.tape--tr { top: -0.55rem; right: -1rem; transform: rotate(36deg); }
+
+/* 纸片卡片：贴在纸页上的卡片，微倾、单层软影；可点卡片 hover 摆正上浮 */
+.paper-card {
+  position: relative;
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-paper);
+  transition: transform var(--dur-short) var(--ease-out),
+    box-shadow var(--dur-short) var(--ease-out);
+}
+.tilt-l { transform: rotate(-0.5deg); }
+.tilt-r { transform: rotate(0.7deg); }
+a.paper-card,
+.link-card {
+  text-decoration: none;
+}
+a.paper-card:hover,
+a.paper-card:focus-visible,
+.link-card:hover,
+.link-card:focus-visible {
+  transform: rotate(0deg) translateY(-3px);
+  box-shadow: 0 6px 18px -6px color-mix(in oklch, var(--color-ink) 32%, transparent);
+}
+
+/* 卡片 hover 时胶带轻轻摆动（各位置各自的基准 transform） */
+@keyframes tape-jiggle-tc {
+  0%, 100% { transform: translateX(-50%) rotate(-3deg); }
+  50% { transform: translateX(-50%) rotate(2deg) translateY(-1px); }
+}
+@keyframes tape-jiggle-tl {
+  0%, 100% { transform: rotate(-38deg); }
+  50% { transform: rotate(-30deg) translateY(-1px); }
+}
+@keyframes tape-jiggle-tr {
+  0%, 100% { transform: rotate(36deg); }
+  50% { transform: rotate(28deg) translateY(-1px); }
+}
+a.paper-card:hover .tape--tc,
+.link-card:hover .tape--tc { animation: tape-jiggle-tc 700ms var(--ease-in-out); }
+a.paper-card:hover .tape--tl,
+.link-card:hover .tape--tl { animation: tape-jiggle-tl 700ms var(--ease-in-out); }
+a.paper-card:hover .tape--tr,
+.link-card:hover .tape--tr { animation: tape-jiggle-tr 700ms var(--ease-in-out); }
+
+/* 编号角标：仅用于真正有序的位置（首页横带 / 阅读路径 / 归档年份） */
+.badge-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.1em;
+  height: 2.1em;
+  padding-inline: 0.45em;
+  background: var(--color-accent);
+  color: var(--color-paper-2);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  letter-spacing: 0.06em;
+  border-radius: 0.5em;
+  transform: rotate(-4deg);
+  box-shadow: var(--shadow-paper);
+  font-variant-numeric: tabular-nums;
+  --stamp-rot: -4deg;
+}
+
+/* 标题手绘波浪线 */
+.squiggle {
+  text-decoration: underline wavy var(--color-accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.28em;
+}
+
+/* 邮戳盖印：所在的 reveal 段落进场后「啪」地盖上（transform+opacity） */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.35em 0.75em;
+  border: 2px dashed var(--color-accent);
+  border-radius: 0.45em;
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  letter-spacing: 0.08em;
+  transform: rotate(-5deg);
+  opacity: 0.8;
+  --stamp-rot: -5deg;
+  --stamp-opacity: 0.8;
+}
+@keyframes stamp-in {
+  0% { opacity: 0; transform: rotate(var(--stamp-rot)) scale(1.6); }
+  55% { opacity: 1; transform: rotate(var(--stamp-rot)) scale(0.94); }
+  100% { opacity: var(--stamp-opacity, 1); transform: rotate(var(--stamp-rot)) scale(1); }
+}
+.reveal.is-in .badge-num,
+.reveal.is-in .stamp,
+.stamp--onload {
+  animation: stamp-in 380ms var(--ease-out) backwards;
+}
+.reveal.is-in .badge-num { animation-delay: calc(var(--i, 0) * 70ms + 140ms); }
+.reveal.is-in .stamp { animation-delay: 260ms; }
+.stamp--onload { animation-delay: 480ms; }
+
+/* 通用小类（各页在用） */
+.muted { color: var(--color-muted); }
+.small { font-size: var(--text-sm); }
+.mono  { font-family: var(--font-mono); }
+
+/* ── 入场编排（IntersectionObserver 滚动显现；无 JS 时内容直接可见）──
+ * .reveal 进场时上浮淡入，--i 错峰；.reveal-fade 仅淡入（供吸顶/树等不宜位移的元素）。
+ * html.js 由 BaseLayout 首帧脚本添加。
+ */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity var(--dur-long) var(--ease-out) calc(var(--i, 0) * 70ms),
+    transform var(--dur-long) var(--ease-out) calc(var(--i, 0) * 70ms);
+}
+.js .reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+.js .reveal-fade {
+  opacity: 0;
+  transition: opacity var(--dur-long) var(--ease-out);
+}
+.js .reveal-fade.is-in {
+  opacity: 1;
+}
+
+/* 容器进场后子项依次落纸（--i 由子项内联提供）。
+ * 用只有 from 的 keyframes：动画结束后回到各自自然状态，
+ * 不锁 transform —— 纸片的微倾与 hover 摆正照常工作。
+ */
+.js .reveal-stagger.is-in > * {
+  animation: child-in var(--dur-long) var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+@keyframes child-in {
+  from { opacity: 0; transform: translateY(12px); }
+}
+
+/* ── 页面间视图过渡（ClientRouter；旧页上收、新页落纸）────────── */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: vt-out 180ms var(--ease-in) both;
+  }
+  ::view-transition-new(root) {
+    animation: vt-in 260ms var(--ease-out) both;
+  }
+  @keyframes vt-out {
+    to { opacity: 0; transform: translateY(-6px); }
+  }
+  @keyframes vt-in {
+    from { opacity: 0; transform: translateY(10px); }
+  }
+}
+
+/* ── 阅读进度条（scroll-driven，零 JS；不支持则不显示）────────── */
+.progress {
+  display: none;
+}
+@supports (animation-timeline: scroll()) {
+  .progress {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--color-accent);
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+    z-index: calc(var(--z-sticky) + 1);
+    animation: progress-grow linear;
+    animation-timeline: scroll(root);
+  }
+  @keyframes progress-grow {
+    to { transform: scaleX(1); }
+  }
+}
+
+/* ── 文章排版（prose）────────────────────────────────────────── */
+.prose {
+  max-width: var(--measure);
+  margin-inline: auto;
+  font-size: var(--text-md);
+  line-height: var(--leading-body);
+}
+
+.prose > * + * { margin-top: var(--space-lg); }
+.prose h2, .prose h3 {
+  margin-top: var(--space-2xl);
+  scroll-margin-top: 6rem;
+}
+.prose h2 { font-size: var(--text-xl); }
+.prose h3 { font-size: var(--text-lg); }
+.prose h2, .prose h3 {
+  text-decoration: underline wavy var(--color-accent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.3em;
+}
+
+/* 首段首字下沉（文楷 + 朱砂） */
+.prose.dropcap > p:first-of-type::first-letter {
+  float: left;
+  font-family: var(--font-display);
+  font-size: 3.2em;
+  line-height: 0.95;
+  font-weight: 700;
+  padding-right: 0.12em;
+  padding-top: 0.04em;
+  color: var(--color-accent);
+}
+
+/* 引用 = 便利贴 */
+.prose blockquote {
+  position: relative;
+  margin: var(--space-lg) 0;
+  margin-inline-start: calc(var(--space-lg) - var(--space-sm));
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-sticky);
+  border: none;
+  border-radius: 4px 14px 8px 12px / 12px 6px 14px 8px;
+  transform: rotate(-0.6deg);
+  box-shadow: var(--shadow-paper);
+  color: var(--color-muted);
+}
+.prose blockquote::before {
+  content: "";
+  position: absolute;
+  top: -0.55rem;
+  left: 50%;
+  width: 3.75rem;
+  height: 1.1rem;
+  transform: translateX(-50%) rotate(-2deg);
+  background: var(--tape-green);
+  opacity: 0.7;
+  border-radius: 1px;
+}
+
+.prose ul, .prose ol { padding-inline-start: 1.4em; }
+.prose li + li { margin-top: var(--space-2xs); }
+
+.prose .task-list-item {
+  list-style: none;
+  margin-left: -1.2em;
+}
+.prose .task-list-item input {
+  margin-right: 0.5em;
+  accent-color: var(--color-accent);
+}
+
+/* 代码块：虚线纸框 + 语言标签行 */
+.prose figure.code {
+  position: relative;
+  margin: var(--space-lg) 0;
+  padding: var(--space-sm) var(--space-md) var(--space-2xs);
+  background: var(--color-paper-2);
+  border: 1.5px dashed var(--color-rule-strong);
+  border-radius: var(--radius-md);
+}
+.prose figure.code::before {
+  content: attr(data-lang);
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-neutral);
+  padding: var(--space-2xs) 0 var(--space-xs);
+}
+.prose figure.code pre {
+  margin: 0 0 var(--space-xs);
+  padding: 0;
+  background: none;
+  overflow-x: auto;
+}
+.prose pre code {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  display: block;
+}
+.prose code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--color-paper-3);
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.prose th {
+  text-align: left;
+  font-family: var(--font-display);
+  border-bottom: 2px solid var(--color-rule-strong);
+  padding: var(--space-xs) var(--space-sm);
+  font-weight: 700;
+}
+.prose td {
+  border-bottom: 1px dashed var(--color-rule);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+/* 插图 = 拍立得贴纸 */
+.prose figure:not(.code) {
+  margin: var(--space-xl) 0;
+}
+.prose figure img {
+  border: 6px solid var(--color-paper-2);
+  border-radius: 2px;
+  box-shadow: var(--shadow-paper);
+}
+.prose figcaption {
+  margin-top: var(--space-xs);
+  font-size: var(--text-sm);
+  color: var(--color-neutral);
+  text-align: center;
+}
+
+.prose mark {
+  background: var(--color-accent-wash);
+  color: inherit;
+  padding: 0 0.2em;
+  border-radius: 0.3em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* 分隔 = 撕纸线 */
+.prose hr {
+  border: none;
+  border-top: 2px dashed var(--color-rule-strong);
+  margin-block: var(--space-2xl);
+}
+
+/* 高亮配色（跟纸色系统走） */
+.hljs-comment, .hljs-quote { color: var(--color-neutral); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-name { color: var(--color-accent); }
+.hljs-string, .hljs-attr { color: var(--color-success); }
+.hljs-number, .hljs-literal { color: var(--color-accent-ink); }
+.hljs-title, .hljs-function { color: var(--color-ink-strong); font-weight: 600; }
+
+/* ── 元信息行（文楷手写感）───────────────────────────────────── */
+.meta-line {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+  color: var(--color-neutral);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+}
+
+/* ── 横带（Ecosystem Index rail）────────────────────────────── */
+.rail {
+  border-top: 1.5px dashed var(--color-rule-strong);
+  padding-top: var(--space-lg);
+  margin-top: var(--space-2xl);
+}
+.rail__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+.rail__title {
+  font-size: var(--text-xl);
+  margin: 0;
+  text-decoration: underline wavy var(--color-accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.28em;
+}
+.rail__more {
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+/* 列表行：虚线行分隔，日期手写 */
+.rowlist { list-style: none; margin: 0; padding: 0; }
+.rowlist > li {
+  display: flex;
+  gap: var(--space-lg);
+  align-items: baseline;
+  padding-block: var(--space-sm);
+  border-bottom: 1px dashed var(--color-rule);
+}
+.rowlist > li:last-child { border-bottom: none; }
+.rowlist time {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  color: var(--color-neutral);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.rowlist .rowlist__title {
+  color: var(--color-ink);
+  text-decoration: none;
+  font-weight: 400;
+  display: inline-block;
+  transition: transform var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out);
+}
+.rowlist .rowlist__title:hover {
+  color: var(--color-accent);
+  transform: translateX(4px);
+}
+.rowlist .rowlist__meta {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--color-neutral);
+  white-space: nowrap;
+}
+
+/* 标签 = 贴纸药丸 */
+.taglink {
+  display: inline-block;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: var(--radius-pill);
+  padding: var(--space-3xs) var(--space-sm);
+  text-decoration: none;
+  transition: color var(--dur-short) var(--ease-out),
+    transform var(--dur-short) var(--ease-out);
+}
+.taglink:hover {
+  color: var(--color-accent);
+  text-decoration: none;
+  transform: rotate(-2deg);
+}
+
+/* 焦点 */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* 减速动效：位移全部收敛为 ≤150ms 淡入（tokens.css 已全局封顶时长） */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .js .reveal { transform: none; }
+  .reveal.is-in .badge-num,
+  .reveal.is-in .stamp,
+  .stamp--onload {
+    animation: none;
+  }
+}

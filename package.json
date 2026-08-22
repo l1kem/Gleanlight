@@ -1,0 +1,19 @@
+{
+  "name": "gleanlight",
+  "private": true,
+  "version": "0.1.0-beta.1",
+  "description": "拾光集 · 自托管知识库 + 博客：Obsidian 式双链写作，一键发布纯静态站点",
+  "scripts": {
+    "dev:server": "pnpm --filter @gleanlight/server dev",
+    "dev:admin": "pnpm --filter @gleanlight/admin dev",
+    "dev:site": "pnpm --filter @gleanlight/site dev",
+    "seed": "pnpm --filter @gleanlight/server seed",
+    "build:site": "pnpm --filter @gleanlight/site build",
+    "build:admin": "pnpm --filter @gleanlight/admin build",
+    "build": "pnpm build:admin && pnpm build:site",
+    "start": "pnpm --filter @gleanlight/server start"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,45 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getData, latest, postDate } from "../../lib/data";
+
+const { posts, tags } = await getData();
+const list = latest(posts, 500);
+---
+
+<BaseLayout title="文章" description="全部文章，按时间倒序。">
+  <section class="rail reveal" style="--i: 0">
+    <div class="rail__head">
+      <h1 class="rail__title">文章 · {list.length}</h1>
+    </div>
+    {tags.length > 0 && (
+      <p class="tags">
+        {tags.slice(0, 24).map((t) => (
+          <a class="taglink" href={`/tags/${t.name}`}>{t.name} · {t.count}</a>
+        ))}
+      </p>
+    )}
+    <ul class="rowlist">
+      {list.map((p) => (
+        <li>
+          <time datetime={p.publishedAt}>{postDate(p.publishedAt)}</time>
+          <a class="rowlist__title" href={`/posts/${p.slug}`}>{p.title}</a>
+          {p.topicName && <span class="rowlist__meta">{p.topicName}</span>}
+        </li>
+      ))}
+    </ul>
+    {list.length === 0 && <p class="muted">尚无已发布文章。</p>}
+  </section>
+</BaseLayout>
+
+<style>
+  h1.rail__title {
+    font-size: var(--text-xl);
+    margin: 0;
+  }
+  .tags {
+    margin: 0 0 var(--space-lg);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs);
+  }
+</style>

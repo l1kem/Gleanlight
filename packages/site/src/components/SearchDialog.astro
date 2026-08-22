@@ -1,0 +1,254 @@
+---
+/**
+ * 搜索弹层：导航「搜索」或按 / 键唤起，页面中上弹出，即敲即搜。
+ * 索引由 BaseLayout 构建时内联（标题/摘要/标签）；回车跳第一条。
+ */
+interface IndexItem {
+  slug: string;
+  title: string;
+  summary: string;
+  tags: string[];
+  topic: string | null;
+  date: string;
+}
+
+interface Props {
+  index: IndexItem[];
+}
+const { index } = Astro.props;
+---
+
+<div class="search-layer" id="search-layer" hidden aria-hidden="true">
+  <div class="search-dialog" role="dialog" aria-modal="true" aria-label="搜索">
+    <div class="search-bar">
+      <span class="search-icon" aria-hidden="true">🔍</span>
+      <input
+        id="search-input"
+        class="search-input"
+        type="search"
+        placeholder="搜索文章（标题 / 摘要 / 标签）…"
+        autocomplete="off"
+      />
+      <button class="search-close" type="button" data-search-close aria-label="关闭">esc</button>
+    </div>
+    <p class="search-count muted small" id="search-count"></p>
+    <ul class="search-results" id="search-results"></ul>
+    <p class="search-foot muted small">
+      <span class="search-kbd">/</span> 唤起 · <span class="search-kbd">↵</span> 打开第一条 · <span class="search-kbd">esc</span> 关闭
+    </p>
+  </div>
+</div>
+
+<script define:vars={{ index }}>
+  (function () {
+    var layer = document.getElementById("search-layer");
+    var input = document.getElementById("search-input");
+    var results = document.getElementById("search-results");
+    var count = document.getElementById("search-count");
+    var current = [];
+
+    function esc(s) {
+      return String(s).replace(/[&<>"]/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+      });
+    }
+
+    function render(items) {
+      current = items;
+      results.innerHTML = items
+        .slice(0, 30)
+        .map(function (p, i) {
+          return (
+            '<li><a class="search-hit" href="/posts/' +
+            encodeURIComponent(p.slug) +
+            '" data-i="' + i + '">' +
+            '<span class="search-hit__title">' + esc(p.title) + "</span>" +
+            '<span class="search-hit__meta">' + esc(p.topic || "") + " · " + esc(p.date) + "</span>" +
+            "</a></li>"
+          );
+        })
+        .join("");
+      count.textContent = items.length
+        ? items.length + " 篇可检索" + (items.length > 30 ? "（显示前 30）" : "")
+        : "没有匹配的文章";
+    }
+
+    function search(q) {
+      var kw = q.trim().toLowerCase();
+      if (!kw) {
+        render(index);
+        return;
+      }
+      render(
+        index.filter(function (p) {
+          return [p.title, p.summary, p.tags.join(" "), p.topic].join(" ").toLowerCase().includes(kw);
+        })
+      );
+    }
+
+    function open() {
+      layer.hidden = false;
+      layer.setAttribute("aria-hidden", "false");
+      document.documentElement.style.overflow = "hidden";
+      input.value = "";
+      render(index);
+      setTimeout(function () {
+        input.focus();
+      }, 20);
+    }
+
+    function close() {
+      layer.hidden = true;
+      layer.setAttribute("aria-hidden", "true");
+      document.documentElement.style.overflow = "";
+    }
+
+    function toggle() {
+      layer.hidden ? open() : close();
+    }
+
+    document.addEventListener("click", function (e) {
+      var t = e.target.closest ? e.target.closest("[data-search-open]") : null;
+      if (t) {
+        e.preventDefault();
+        open();
+        return;
+      }
+      if (e.target.closest("[data-search-close]") || e.target === layer) {
+        close();
+      }
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !layer.hidden) {
+        close();
+        return;
+      }
+      var tag = (document.activeElement && document.activeElement.tagName) || "";
+      if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") {
+        e.preventDefault();
+        open();
+      }
+      if (e.key === "Enter" && !layer.hidden && current[0]) {
+        location.href = "/posts/" + encodeURIComponent(current[0].slug);
+      }
+    });
+
+    input.addEventListener("input", function (e) {
+      search(e.target.value);
+    });
+  })();
+</script>
+
+<style>
+  .search-layer {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    background: oklch(20% 0.01 60 / 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 14vh var(--space-lg) var(--space-lg);
+  }
+  .search-layer[hidden] {
+    display: none;
+  }
+  .search-dialog {
+    width: min(36rem, 100%);
+    max-height: 62vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-paper);
+    border: 1.5px dashed var(--color-rule-strong);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-paper);
+    overflow: clip;
+  }
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-paper-2);
+    border-bottom: 1px dashed var(--color-rule);
+  }
+  .search-icon {
+    font-size: var(--text-md);
+  }
+  .search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: var(--text-md);
+    color: var(--color-ink);
+  }
+  .search-input:focus-visible {
+    outline: none;
+  }
+  .search-close {
+    border: 1px dashed var(--color-rule-strong);
+    background: none;
+    border-radius: var(--radius-pill);
+    color: var(--color-neutral);
+    font: inherit;
+    font-size: var(--text-xs);
+    padding: var(--space-3xs) var(--space-sm);
+    cursor: pointer;
+  }
+  .search-count {
+    margin: 0;
+    padding: var(--space-2xs) var(--space-md) 0;
+  }
+  .search-results {
+    list-style: none;
+    margin: var(--space-2xs) 0 0;
+    padding: var(--space-2xs);
+    overflow-y: auto;
+    flex: 1;
+  }
+  .search-hit {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+    padding: var(--space-2xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: background-color var(--dur-short) var(--ease-out);
+  }
+  .search-hit:hover,
+  .search-hit:focus-visible {
+    background: var(--color-paper-3);
+  }
+  .search-hit__title {
+    color: var(--color-ink-strong);
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+  .search-hit__meta {
+    font-size: var(--text-xs);
+    color: var(--color-neutral);
+    font-variant-numeric: tabular-nums;
+  }
+  .search-foot {
+    margin: 0;
+    padding: var(--space-2xs) var(--space-md);
+    border-top: 1px dashed var(--color-rule);
+    display: flex;
+    gap: var(--space-2xs);
+    align-items: center;
+  }
+  .search-kbd {
+    display: inline-block;
+    min-width: 1.4em;
+    text-align: center;
+    padding: 0 0.25em;
+    border: 1px solid var(--color-rule-strong);
+    border-bottom-width: 2px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.75em;
+    color: var(--color-muted);
+  }
+</style>

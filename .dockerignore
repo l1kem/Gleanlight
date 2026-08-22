@@ -1,0 +1,19 @@
+# 构建上下文瘦身：依赖、产物、运行数据与本地文档不进镜像
+.git
+.github
+.ai
+.hallmark
+node_modules
+**/node_modules
+**/dist
+**/.astro
+public-dist
+docker-data
+packages/server/data
+packages/site/content/data
+packages/site/public/media
+packages/site/public/uploads
+*.log
+.DS_Store
+.env
+.env.*

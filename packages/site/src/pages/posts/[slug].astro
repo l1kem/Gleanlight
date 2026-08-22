@@ -1,0 +1,308 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import KbTree from "../../components/KbTree.astro";
+import { renderMarkdown, extractToc } from "@gleanlight/markdown";
+import { getData, postDate, neighbors, backlinks } from "../../lib/data";
+
+export async function getStaticPaths() {
+  const { posts } = await getData();
+  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+}
+
+const { posts } = await getData();
+const post = Astro.props.post;
+const toc = extractToc(post.contentMd);
+const hasTopic = Boolean(post.topicSlug);
+
+// 指向不存在文章的 [[链接]] → “未撰写”虚链
+const slugSet = new Set(posts.map((p) => p.slug));
+const html = renderMarkdown(post.contentMd).replace(
+  /href="(\/posts\/[^"]+)"/g,
+  (m, href: string) => (slugSet.has(href.slice("/posts/".length)) ? m : `class="wikilink-missing" ${m}`)
+);
+
+const { prev, next } = neighbors(posts, post);
+const linked = post.links
+  .map((s) => posts.find((p) => p.slug === s))
+  .filter(Boolean);
+const linkedBy = backlinks(posts, post.slug);
+---
+
+<BaseLayout title={post.title} description={post.summary}>
+  <div class:list={[{ "kb-layout": hasTopic }]}>
+    {hasTopic && <KbTree currentTopicSlug={post.topicSlug!} currentPostSlug={post.slug} />}
+    <article class="post">
+    <header class="post__head reveal" style="--i: 0">
+      {post.domainName && post.topicName && (
+        <p class="post__crumb">
+          <a href="/kb">知识库</a> / {post.domainName} / <a href={`/kb/${post.topicSlug}`}>{post.topicName}</a>
+        </p>
+      )}
+      <div class="post__titlewrap">
+        <span class="tape tape--honey tape--tl" aria-hidden="true"></span>
+        <h1 class="post__title">{post.title}</h1>
+      </div>
+      <p class="meta-line">
+        <time datetime={post.publishedAt}>{postDate(post.publishedAt)}</time>
+        <span>阅读 {post.readingTime} 分钟</span>
+        {post.tags.map((t) => (
+          <a class="taglink" href={`/tags/${t}`}>{t}</a>
+        ))}
+      </p>
+    </header>
+
+    <div class="post__layout">
+      <div class="prose dropcap reveal" style="--i: 1" set:html={html} />
+
+      {toc.length > 1 && (
+        <nav class="toc" aria-label="目录">
+          <p class="toc__title">目录</p>
+          {toc.map((item) => (
+            <a class:list={["toc__link", { "toc__link--sub": item.level === 3 }]} href={`#${item.id}`}>
+              {item.text}
+            </a>
+          ))}
+        </nav>
+      )}
+    </div>
+
+    <footer class="post__foot">
+      {((linked.length > 0) || (linkedBy.length > 0)) && (
+        <section class="post__links">
+          <h2>知识关联</h2>
+          {linked.length > 0 && (
+            <>
+              <p class="post__links-label">本文引用</p>
+              <ul>
+                {linked.map((p) => (
+                  <li><a href={`/posts/${p!.slug}`}>{p!.title}</a></li>
+                ))}
+              </ul>
+            </>
+          )}
+          {linkedBy.length > 0 && (
+            <>
+              <p class="post__links-label">引用本文</p>
+              <ul>
+                {linkedBy.map((p) => (
+                  <li><a href={`/posts/${p.slug}`}>{p.title}</a></li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      )}
+
+      {(prev || next) && (
+        <nav class="post__nav" aria-label="上下篇">
+          {prev && (
+            <a class="post__nav-item post__nav-item--prev paper-card" href={`/posts/${prev.slug}`}>
+              <span class="post__nav-label">← 上一篇</span>
+              <span class="post__nav-title">{prev.title}</span>
+            </a>
+          )}
+          {next && (
+            <a class="post__nav-item post__nav-item--next paper-card" href={`/posts/${next.slug}`}>
+              <span class="post__nav-label">下一篇 →</span>
+              <span class="post__nav-title">{next.title}</span>
+            </a>
+          )}
+        </nav>
+      )}
+    </footer>
+    </article>
+  </div>
+</BaseLayout>
+
+<style>
+  /* 有主题的文章：左侧知识库文件树常驻，内容右移优先展示 */
+  .kb-layout {
+    display: grid;
+    grid-template-columns: 17rem minmax(0, 1fr);
+    gap: var(--space-2xl);
+    align-items: start;
+  }
+  @media (max-width: 64rem) {
+    .kb-layout {
+      grid-template-columns: 1fr;
+      gap: var(--space-lg);
+    }
+    .kb-layout :global(.kbtree) {
+      position: static;
+      max-height: 40vh;
+    }
+  }
+
+  .post__head {
+    max-width: var(--measure);
+    margin: 0 auto var(--space-xl);
+  }
+  .post__crumb {
+    margin: 0 0 var(--space-sm);
+    font-size: var(--text-sm);
+    color: var(--color-neutral);
+  }
+  .post__crumb a {
+    color: var(--color-muted);
+  }
+  .post__titlewrap {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    padding-top: var(--space-2xs);
+  }
+  .post__title {
+    margin: 0 0 var(--space-md);
+    font-size: var(--text-3xl);
+    font-weight: 700;
+  }
+
+  .post__layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-xl);
+    justify-content: center;
+  }
+  @media (min-width: 72rem) {
+    .post__layout {
+      grid-template-columns: minmax(0, 44em) 11rem;
+    }
+    /* 文件树在场时右侧 TOC 收窄，正文优先 */
+    .kb-layout .post__layout {
+      grid-template-columns: minmax(0, 1fr) 10rem;
+    }
+    .toc {
+      position: sticky;
+      top: var(--space-lg);
+      align-self: start;
+    }
+  }
+
+  /* 目录 = 便利贴 */
+  .toc {
+    position: relative;
+    background: var(--color-sticky);
+    border-radius: 4px 12px 6px 10px / 10px 5px 12px 6px;
+    transform: rotate(0.8deg);
+    box-shadow: var(--shadow-paper);
+    padding: var(--space-md) var(--space-md) var(--space-sm);
+    font-size: var(--text-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+  }
+  .toc::before {
+    content: "";
+    position: absolute;
+    top: -0.55rem;
+    left: 50%;
+    width: 3.5rem;
+    height: 1.1rem;
+    transform: translateX(-50%) rotate(2deg);
+    background: var(--tape-blue);
+    opacity: 0.7;
+    border-radius: 1px;
+  }
+  .toc__title {
+    margin: 0 0 var(--space-2xs);
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--color-ink-strong);
+    font-size: var(--text-sm);
+    letter-spacing: 0.1em;
+  }
+  .toc__link {
+    color: var(--color-muted);
+    text-decoration: none;
+    line-height: var(--leading-snug);
+  }
+  .toc__link:hover {
+    color: var(--color-accent);
+  }
+  .toc__link--sub {
+    padding-left: var(--space-md);
+  }
+
+  /* 未撰写的 [[虚链]] */
+  :global(.wikilink-missing) {
+    color: var(--color-neutral);
+    text-decoration-style: dashed;
+    text-decoration-color: var(--color-rule-strong);
+  }
+  :global(.wikilink-missing)::after {
+    content: "（未撰写）";
+    font-size: 0.75em;
+    color: var(--color-neutral);
+  }
+
+  .post__foot {
+    max-width: var(--measure);
+    margin: var(--space-3xl) auto 0;
+  }
+  .post__links {
+    border-top: 2px dashed var(--color-rule-strong);
+    padding-top: var(--space-lg);
+  }
+  .post__links h2 {
+    font-size: var(--text-lg);
+    margin: 0 0 var(--space-md);
+  }
+  .post__links-label {
+    font-size: var(--text-xs);
+    letter-spacing: 0.1em;
+    color: var(--color-neutral);
+    margin: var(--space-md) 0 var(--space-2xs);
+    font-family: var(--font-display);
+  }
+  .post__links ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .post__links li {
+    padding-block: var(--space-2xs);
+    border-bottom: 1px dashed var(--color-rule);
+  }
+
+  .post__nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    margin-top: var(--space-2xl);
+  }
+  .post__nav-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+    padding: var(--space-md);
+    min-width: 0;
+  }
+  .post__nav-item--prev {
+    transform: rotate(-0.4deg);
+  }
+  .post__nav-item--next {
+    transform: rotate(0.4deg);
+    text-align: right;
+  }
+  .post__nav-item:hover {
+    transform: rotate(0deg) translateY(-2px);
+  }
+  .post__nav-label {
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    color: var(--color-neutral);
+  }
+  .post__nav-title {
+    color: var(--color-ink-strong);
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 40rem) {
+    .post__nav {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

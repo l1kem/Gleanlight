@@ -1,0 +1,181 @@
+/* Hallmark · component: editor theme overlay · genre: editorial · theme: Newsprint (admin)
+ * design-system: design.md「后台」节 —— vditor 外观完全消费 @gleanlight/tokens，与后台融为一体：
+ * 暖纸底 / 发丝边 / 近直角 / 朱红 accent。加载顺序：置于 vditor/dist/index.css 之后。
+ * 状态：default · hover · focus-within · dark（随 [data-theme] 翻转，无需 vditor 自带 dark 类）。
+ */
+
+/* ── 变量层：vditor 全部 CSS 变量改接设计 token ─────────────────── */
+.vditor {
+  --border-color: var(--color-rule);
+  --second-color: color-mix(in oklch, var(--color-neutral) 45%, transparent);
+  --panel-background-color: var(--color-paper);
+  --panel-shadow: var(--shadow-whisper);
+  --toolbar-background-color: var(--color-paper-2);
+  --toolbar-icon-color: var(--color-muted);
+  --toolbar-icon-hover-color: var(--color-accent);
+  --textarea-background-color: var(--color-paper);
+  --textarea-text-color: var(--color-ink);
+  --count-background-color: var(--color-paper-3);
+  --heading-border-color: var(--color-rule);
+  --blockquote-color: var(--color-muted);
+  --callout-note-color: var(--color-accent);
+  --callout-note-background-color: var(--color-accent-wash);
+  --callout-tip-color: var(--color-success);
+  --callout-tip-background-color: color-mix(in oklch, var(--color-success) 10%, transparent);
+  --callout-important-color: var(--color-accent-ink);
+  --callout-important-background-color: var(--color-accent-wash);
+  --callout-warning-color: var(--color-danger);
+  --callout-warning-background-color: color-mix(in oklch, var(--color-danger) 8%, transparent);
+  --callout-caution-color: var(--color-danger);
+  --callout-caution-background-color: color-mix(in oklch, var(--color-danger) 8%, transparent);
+  --ir-heading-color: var(--color-accent-ink);
+  --ir-title-color: var(--color-neutral);
+  --ir-bi-color: var(--color-accent-ink);
+  --ir-link-color: var(--color-success);
+  --ir-bracket-color: var(--color-rule-strong);
+  --ir-paren-color: var(--color-rule-strong);
+
+  border-color: var(--color-rule-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  transition: border-color var(--dur-short) var(--ease-out);
+}
+/* 聚焦 = 朱红发丝边（即时变色，不做动画延迟） */
+.vditor:focus-within {
+  border-color: var(--color-accent);
+}
+
+/* ── 工具栏：与后台 .btn 同语汇 ────────────────────────────────── */
+.vditor-toolbar {
+  border-bottom: 1px solid var(--color-rule);
+  box-shadow: none;
+}
+.vditor-toolbar button {
+  color: var(--toolbar-icon-color);
+  border-radius: var(--radius-sm);
+}
+.vditor-toolbar button:hover,
+.vditor-toolbar button:focus-visible {
+  color: var(--color-ink-strong);
+  border-color: var(--color-rule-strong);
+}
+
+/* 编辑器嵌入 .editor-wrap：外框由 wrap 统一（聚焦时整框转朱红），
+ * vditor 只留上边线作模式条与正文分隔；聚焦时让位给外框，避免双线 */
+.editor-wrap .vditor {
+  border: none;
+  border-top: 1px solid var(--color-rule);
+  border-radius: 0;
+  transition: border-color var(--dur-short) var(--ease-out);
+}
+.editor-wrap .vditor:focus-within {
+  border-top-color: transparent;
+}
+
+/* ── 书写区与预览：与前台 prose 同一排版规则（Newsprint 字族）──── */
+.vditor .vditor-reset {
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  line-height: var(--leading-body);
+  color: var(--color-ink);
+}
+.vditor .vditor-reset h1,
+.vditor .vditor-reset h2,
+.vditor .vditor-reset h3,
+.vditor .vditor-reset h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-ink-strong);
+  line-height: var(--leading-tight);
+}
+.vditor .vditor-reset a {
+  color: var(--color-accent);
+}
+.vditor .vditor-reset code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--color-paper-2);
+  border-radius: var(--radius-sm);
+  padding: 0.1em 0.35em;
+}
+.vditor .vditor-reset pre {
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+}
+.vditor .vditor-reset pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+.vditor .vditor-reset blockquote {
+  border-left: 2px solid var(--color-rule-strong);
+  border-radius: 0;
+  color: var(--color-muted);
+  background: var(--color-paper-2);
+}
+.vditor .vditor-reset table {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.vditor .vditor-reset th {
+  border-bottom: 1px solid var(--color-rule-strong);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+.vditor .vditor-reset td {
+  border-bottom: 1px solid var(--color-rule);
+}
+.vditor .vditor-reset hr {
+  border: none;
+  border-top: 1px dashed var(--color-rule-strong);
+}
+
+/* 预览代码高亮：沿用前台 hljs 映射 */
+.vditor .hljs-comment,
+.vditor .hljs-quote {
+  color: var(--color-neutral);
+}
+.vditor .hljs-keyword,
+.vditor .hljs-selector-tag,
+.vditor .hljs-name {
+  color: var(--color-accent);
+}
+.vditor .hljs-string,
+.vditor .hljs-attr {
+  color: var(--color-success);
+}
+.vditor .hljs-number,
+.vditor .hljs-literal {
+  color: var(--color-accent-ink);
+}
+.vditor .hljs-title,
+.vditor .hljs-function {
+  color: var(--color-ink-strong);
+  font-weight: 600;
+}
+
+/* ── 计数 / 提示 / 全屏 ───────────────────────────────────────── */
+.vditor .vditor-counter {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  border-radius: var(--radius-sm);
+}
+.vditor-hint {
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-whisper);
+}
+.vditor--fullscreen {
+  background-color: var(--color-paper);
+}
+.vditor--fullscreen .vditor-toolbar {
+  border-bottom-color: var(--color-rule);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vditor {
+    transition: none;
+  }
+}

@@ -1,0 +1,124 @@
+/* Hallmark · genre: editorial · macrostructure: Ecosystem Index · theme: Newsprint
+ * nav: N6 报纸刊头 · footer: Ft6 书信式收尾 · enrichment: none (typography only)
+ * axes: light paper · roman-serif display · warm accent
+ * 前台(Astro)与后台(Vue)共用本文件 —— UI 风格统一的单一事实来源。
+ */
+
+:root {
+  /* ── 色彩 · Newsprint：暖纸 / 墨 / 朱红印章色（OKLCH）────────── */
+  --color-paper:    oklch(97% 0.008 85);  /* 页面底 */
+  --color-paper-2:  oklch(94.5% 0.011 85);/* 次级面：代码块、引用、输入框底 */
+  --color-paper-3:  oklch(92% 0.012 85);  /* 三级面：hover、选中态 */
+  --color-rule:     oklch(85% 0.010 85);  /* 发丝分隔线 */
+  --color-rule-strong: oklch(72% 0.012 80); /* 双细线、强调边 */
+  --color-neutral:  oklch(58% 0.010 80);  /* 次要文字 */
+  --color-muted:    oklch(42% 0.012 72);  /* 辅助说明 */
+  --color-ink:      oklch(23% 0.014 62);  /* 正文墨色 */
+  --color-ink-strong: oklch(17% 0.016 60);/* 标题重墨 */
+  --color-accent:   oklch(51% 0.16 32);   /* 朱红：链接/强调/焦点环 */
+  --color-accent-ink: oklch(43% 0.15 32); /* 朱红按下态（深一档）*/
+  --color-accent-wash: oklch(93% 0.025 45); /* 朱红极浅晕染：<mark>、选中 */
+  --color-focus:    oklch(51% 0.16 32);
+  --color-danger:   oklch(50% 0.18 25);
+  --color-success:  oklch(50% 0.12 150);
+  --color-selection-bg: oklch(93% 0.025 45);
+
+  /* ── 字体 · 2+1 ──────────────────────────────────────────────── */
+  /* display：中文衬线（标题、刊头）。webfont 按需子集加载，回退系统宋体 */
+  --font-display: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  /* body：系统中文栈（正文阅读，屏幕友好）*/
+  --font-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  /* mono（outlier ≤2 处角色：代码块 + 元信息行）*/
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
+
+  /* ── 字号 · major third 1.25 ─────────────────────────────────── */
+  --text-xs:      0.8rem;     /* 12.8 辅助标签（≥14px 以下仅用于非正文标签）*/
+  --text-sm:      0.875rem;   /* 14   元信息、日期行 */
+  --text-base:    1rem;       /* 16   正文 */
+  --text-md:      1.125rem;   /* 18   列表标题 */
+  --text-lg:      1.3125rem;  /* 21   h3 / 卡片标题 */
+  --text-xl:      1.6rem;     /* 25.6 h2 */
+  --text-2xl:     1.95rem;    /* 31   文章标题 */
+  --text-3xl:     2.3rem;     /* 37   区块大标题 */
+  --text-mast:    clamp(1.9rem, 2.6vw + 1rem, 2.6rem); /* 刊头字标（N6）*/
+
+  /* ── 行高 ────────────────────────────────────────────────────── */
+  --leading-tight: 1.15;
+  --leading-snug: 1.35;
+  --leading-body: 1.75;   /* 中文正文略宽于西文 1.5–1.65 */
+
+  /* ── 间距 · 4pt 九级 ─────────────────────────────────────────── */
+  --space-3xs: 0.125rem;  /*  2 */
+  --space-2xs: 0.25rem;   /*  4 */
+  --space-xs:  0.5rem;    /*  8 */
+  --space-sm:  0.75rem;   /* 12 */
+  --space-md:  1rem;      /* 16 */
+  --space-lg:  1.5rem;    /* 24 */
+  --space-xl:  2.25rem;   /* 36 */
+  --space-2xl: 3.5rem;    /* 56 */
+  --space-3xl: 5rem;      /* 80 */
+  --space-4xl: 7.5rem;    /* 120 */
+
+  /* ── 动效 · 三时长三缓动 ─────────────────────────────────────── */
+  --dur-micro: 120ms;  /* 按下、色移 */
+  --dur-short: 220ms; /* hover、菜单、主题切换 */
+  --dur-long:  420ms; /* 抽屉、手风琴、入场 */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:     cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ── 层级 · 六级命名 ─────────────────────────────────────────── */
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+
+  /* ── 形状与深度 ──────────────────────────────────────────────── */
+  --radius-sm: 2px;   /* Newsprint 气质：近乎直角 */
+  --radius-md: 4px;
+  --shadow-whisper: 0 1px 2px oklch(20% 0.01 60 / 0.06);
+  --shadow-hairline: 0 0 0 1px oklch(30% 0.01 60 / 0.07);
+
+  /* ── 布局 ────────────────────────────────────────────────────── */
+  --measure: 44em;          /* 正文行宽（中文约 40–46 字）*/
+  --container: 72rem;       /* 最宽内容 1152 */
+  --gutter: clamp(1rem, 4vw, 2.5rem);
+}
+
+/* ── 暗色 · 同锚色相，仅动明度/彩度 ────────────────────────────── */
+[data-theme="dark"] {
+  --color-paper:    oklch(16% 0.008 80);
+  --color-paper-2:  oklch(19.5% 0.010 80);
+  --color-paper-3:  oklch(23% 0.012 80);
+  --color-rule:     oklch(30% 0.010 80);
+  --color-rule-strong: oklch(42% 0.012 78);
+  --color-neutral:  oklch(64% 0.010 80);
+  --color-muted:    oklch(74% 0.008 82);
+  --color-ink:      oklch(90% 0.006 85);
+  --color-ink-strong: oklch(95% 0.005 85);
+  --color-accent:   oklch(66% 0.145 32);
+  --color-accent-ink: oklch(74% 0.13 32);
+  --color-accent-wash: oklch(26% 0.035 40);
+  --color-focus:    oklch(66% 0.145 32);
+  --color-danger:   oklch(64% 0.16 25);
+  --color-success:  oklch(66% 0.11 150);
+  --color-selection-bg: oklch(26% 0.035 40);
+  --shadow-whisper: 0 1px 2px oklch(0% 0 0 / 0.3);
+  --shadow-hairline: 0 0 0 1px oklch(80% 0.01 80 / 0.1);
+}
+
+/* ── 基础细节 ──────────────────────────────────────────────────── */
+::selection { background: var(--color-selection-bg); }
+
+html { overflow-x: clip; }
+body { overflow-x: clip; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 150ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 150ms !important;
+  }
+}

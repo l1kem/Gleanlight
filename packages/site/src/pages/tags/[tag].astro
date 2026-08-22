@@ -1,0 +1,40 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getData, postDate } from "../../lib/data";
+
+export async function getStaticPaths() {
+  const { tags } = await getData();
+  return tags.map((t) => ({ params: { tag: t.name }, props: { tag: t } }));
+}
+
+const { posts } = await getData();
+const tag = Astro.props.tag;
+const list = posts
+  .filter((p) => p.tags.includes(tag.name))
+  .sort((a, b) => (a.publishedAt > b.publishedAt ? -1 : 1));
+---
+
+<BaseLayout title={`标签：${tag.name}`} description={`标签「${tag.name}」下的 ${tag.count} 篇文章。`}>
+  <section class="rail reveal" style="--i: 0">
+    <div class="rail__head">
+      <h1 class="rail__title">标签 · {tag.name}</h1>
+      <a class="rail__more" href="/posts">全部标签 →</a>
+    </div>
+    <ul class="rowlist">
+      {list.map((p) => (
+        <li>
+          <time datetime={p.publishedAt}>{postDate(p.publishedAt)}</time>
+          <a class="rowlist__title" href={`/posts/${p.slug}`}>{p.title}</a>
+          {p.topicName && <span class="rowlist__meta">{p.topicName}</span>}
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>
+
+<style>
+  h1.rail__title {
+    font-size: var(--text-xl);
+    margin: 0;
+  }
+</style>

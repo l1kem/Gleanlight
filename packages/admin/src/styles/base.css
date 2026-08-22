@@ -1,0 +1,276 @@
+/* Admin · 通用样式（消费 @gleanlight/tokens —— 与前台同一套设计变量） */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-ink-strong);
+  line-height: var(--leading-tight);
+  margin: 0 0 var(--space-md);
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── 按钮（hover 色移单一信号；focus ring 即时出现）────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out);
+}
+.btn:hover {
+  background: var(--color-paper-3);
+  border-color: var(--color-ink);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.btn:active {
+  color: var(--color-ink-strong);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn[data-loading="true"] {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.btn-primary {
+  background: var(--color-ink-strong);
+  border-color: var(--color-ink-strong);
+  color: var(--color-paper);
+}
+.btn-primary:hover {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.btn-danger {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+.btn-danger:hover {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-paper);
+}
+
+.btn-sm {
+  padding: var(--space-2xs) var(--space-sm);
+  font-size: var(--text-xs);
+}
+
+/* ── 表单 ────────────────────────────────────────────────────── */
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--color-neutral);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin-bottom: var(--space-md);
+}
+.field > label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-muted);
+}
+.field .hint {
+  font-size: var(--text-xs);
+  color: var(--color-neutral);
+}
+
+/* ── 面板（Newsprint：发丝边、近直角，无卡片套卡片）────────── */
+.panel {
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  padding: var(--space-lg);
+}
+.panel + .panel {
+  margin-top: var(--space-lg);
+}
+
+/* ── 表格 ────────────────────────────────────────────────────── */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-muted);
+  border-bottom: 1px solid var(--color-rule-strong);
+  padding: var(--space-sm) var(--space-sm);
+  white-space: nowrap;
+}
+.table td {
+  border-bottom: 1px solid var(--color-rule);
+  padding: var(--space-sm);
+  vertical-align: top;
+}
+.table tr:hover td {
+  background: var(--color-paper-2);
+}
+
+/* ── 徽标 / 标签 ─────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: var(--space-3xs) var(--space-sm);
+  font-size: var(--text-xs);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+.badge-published {
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+.badge-draft {
+  color: var(--color-neutral);
+}
+.badge-featured {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.tag {
+  display: inline-block;
+  margin: 0 var(--space-2xs) var(--space-2xs) 0;
+  padding: var(--space-3xs) var(--space-sm);
+  font-size: var(--text-xs);
+  background: var(--color-paper-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+}
+
+/* ── 页面骨架 ────────────────────────────────────────────────── */
+.page {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg) var(--space-4xl);
+}
+.page-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+.page-head h1 {
+  margin: 0;
+  font-size: var(--text-2xl);
+}
+.page-head .actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: var(--color-neutral);
+}
+.small {
+  font-size: var(--text-sm);
+}
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+/* ── 轻提示（固定角落，不挤布局）────────────────────────────── */
+.toast-zone {
+  position: fixed;
+  right: var(--space-lg);
+  bottom: var(--space-lg);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.toast {
+  border: 1px solid var(--color-rule-strong);
+  border-left: 2px solid var(--color-accent);
+  background: var(--color-paper);
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--text-sm);
+  box-shadow: var(--shadow-whisper);
+  max-width: 24rem;
+}
+.toast-error {
+  border-left-color: var(--color-danger);
+}
+.toast-success {
+  border-left-color: var(--color-success);
+}
+
+.error-text {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}

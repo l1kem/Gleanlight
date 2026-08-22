@@ -1,0 +1,157 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import KbTree from "../../components/KbTree.astro";
+import { getData, topicPosts, postDate } from "../../lib/data";
+
+export async function getStaticPaths() {
+  const { topics } = await getData();
+  return topics.map((t) => ({ params: { topic: t.slug }, props: { topic: t } }));
+}
+
+const { posts, topics, domains } = await getData();
+const topic = Astro.props.topic;
+const domain = domains.find((d) => d.id === topic.domain_id);
+const list = topicPosts(posts, topic.id); // 按 sort_in_topic：主题内阅读路径
+---
+
+<BaseLayout title={topic.name} description={topic.description || `${topic.name} 的知识地图。`}>
+  <div class="kb-layout">
+    <KbTree currentTopicSlug={topic.slug} />
+    <article class="topic reveal" style="--i: 0">
+      <header class="topic__head">
+        <p class="topic__crumb">
+          <a href="/kb">知识库</a> / {domain?.name}
+        </p>
+        <div class="topic__titlewrap">
+          <span class="tape tape--lilac tape--tr" aria-hidden="true"></span>
+          <h1 class="topic__name">{topic.name}</h1>
+        </div>
+        {topic.description && <p class="topic__desc">{topic.description}</p>}
+        <p class="meta-line"><span>共 {list.length} 篇 · 按建议阅读顺序排列</span></p>
+      </header>
+
+      <ol class="path reveal-stagger">
+        {list.map((p, i) => (
+          <li class="path__item" style={`--i: ${Math.min(i, 8)}`}>
+            <span class="path__no">{String(i + 1).padStart(2, "0")}</span>
+            <div class="path__body">
+              <a class="path__title" href={`/posts/${p.slug}`}>{p.title}</a>
+              <p class="path__summary">{p.summary}</p>
+              <p class="meta-line">
+                <time datetime={p.publishedAt}>{postDate(p.publishedAt)}</time>
+                <span>{p.readingTime} 分钟</span>
+                {p.tags.length > 0 && <span>{p.tags.join(" · ")}</span>}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      {list.length === 0 && <p class="muted">这个主题还在筹备中。</p>}
+    </article>
+  </div>
+</BaseLayout>
+
+<style>
+  .kb-layout {
+    display: grid;
+    grid-template-columns: 17rem minmax(0, 1fr);
+    gap: var(--space-2xl);
+    align-items: start;
+  }
+
+  .topic__head {
+    max-width: var(--measure);
+    margin: 0 auto var(--space-xl);
+  }
+  .topic__crumb {
+    margin: 0 0 var(--space-sm);
+    font-size: var(--text-sm);
+    color: var(--color-neutral);
+  }
+  .topic__name {
+    margin: 0 0 var(--space-xs);
+    font-size: var(--text-3xl);
+    font-weight: 700;
+  }
+  .topic__titlewrap {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    padding-top: var(--space-2xs);
+  }
+  .topic__desc {
+    margin: 0 0 var(--space-sm);
+    color: var(--color-muted);
+  }
+
+  .path {
+    list-style: none;
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0;
+    counter-reset: step;
+  }
+  .path__item {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: var(--space-md);
+    padding-block: var(--space-lg);
+    border-bottom: 1px dashed var(--color-rule);
+  }
+  .path__item:first-child {
+    border-top: 2px dashed var(--color-rule-strong);
+  }
+  /* 阅读路径编号 = 砖红圆章 */
+  .path__no {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.2em;
+    height: 2.2em;
+    background: var(--color-accent);
+    color: var(--color-paper-2);
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    border-radius: 50%;
+    transform: rotate(-4deg);
+    box-shadow: var(--shadow-paper);
+    font-variant-numeric: tabular-nums;
+    --stamp-rot: -4deg;
+  }
+  .path__item:nth-child(even) .path__no {
+    transform: rotate(3deg);
+    --stamp-rot: 3deg;
+  }
+  .path__title {
+    color: var(--color-ink-strong);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: var(--text-md);
+  }
+  .path__title:hover {
+    color: var(--color-accent);
+  }
+  .path__summary {
+    margin: var(--space-2xs) 0;
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+  }
+
+  /* 章印随编排盖上 */
+  .path.is-in .path__no {
+    animation: stamp-in 380ms var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * 70ms + 140ms);
+  }
+
+  @media (max-width: 64rem) {
+    .kb-layout {
+      grid-template-columns: 1fr;
+      gap: var(--space-lg);
+    }
+    .kb-layout :global(.kbtree) {
+      position: static;
+      max-height: 40vh;
+    }
+  }
+</style>

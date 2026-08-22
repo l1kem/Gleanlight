@@ -1,0 +1,143 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import KbTree from "../../components/KbTree.astro";
+import { getData, topicPosts } from "../../lib/data";
+
+const { posts, domains, topics } = await getData();
+
+const tree = domains
+  .map((d) => ({
+    ...d,
+    topics: topics
+      .filter((t) => t.domain_id === d.id)
+      .map((t) => ({ ...t, count: topicPosts(posts, t.id).length })),
+  }))
+  .filter((d) => d.topics.length > 0);
+---
+
+<BaseLayout title="知识库" description="知识域 → 主题 → 文章；成体系的知识地图。">
+  <div class="kb-layout">
+    <KbTree />
+    <section class="kb-main reveal" style="--i: 0">
+      <header class="kb-head">
+        <h1>知识图谱</h1>
+        <p class="kb-head__desc">
+          每个知识域是一排书架，主题是一册专题，册内文章按阅读顺序装订；篇目之间以
+          <span class="mono">[[ ]]</span> 互相引用。左侧目录可逐层展开。
+        </p>
+      </header>
+
+      <div class="shelves">
+        {tree.map((d, i) => (
+          <section class:list={["shelf", { "shelf--wide": i === 0 }]} style={`--i: ${Math.min(i, 4)}`}>
+            <h2 class="shelf__name">{d.name}</h2>
+            <p class="shelf__desc">{d.description}</p>
+            <div class="shelf__books">
+              {d.topics.map((t, j) => (
+                <a
+                  class:list={["book paper-card", j % 2 === 0 ? "tilt-l" : "tilt-r"]}
+                  href={`/kb/${t.slug}`}
+                >
+                  <strong class="book__name">{t.name}</strong>
+                  <span class="book__desc">{t.description || "待写一句引言"}</span>
+                  <span class="book__count">{t.count} 篇</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+      {tree.length === 0 && <p class="muted">知识库还是空的——从后台建立第一个知识域开始。</p>}
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .kb-layout {
+    display: grid;
+    grid-template-columns: 17rem minmax(0, 1fr);
+    gap: var(--space-2xl);
+    align-items: start;
+  }
+
+  .kb-head {
+    margin: 0 auto var(--space-xl);
+  }
+  .kb-head h1 {
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    margin: 0 0 var(--space-sm);
+  }
+  .kb-head__desc {
+    margin: 0;
+    color: var(--color-muted);
+  }
+
+  .shelves {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    gap: var(--space-2xl);
+    align-items: start;
+  }
+  .shelf--wide {
+    grid-column: 1 / -1;
+  }
+  .shelf__name {
+    font-size: var(--text-xl);
+    margin: 0 0 var(--space-3xs);
+    text-decoration: underline wavy var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.28em;
+    padding-bottom: var(--space-2xs);
+  }
+  .shelf__desc {
+    margin: 0 0 var(--space-lg);
+    color: var(--color-neutral);
+    font-size: var(--text-sm);
+  }
+  .shelf__books {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+    gap: var(--space-md);
+  }
+  /* 主题册 = 贴纸卡 */
+  .book {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+    padding: var(--space-md);
+    min-width: 0;
+  }
+  .book__name {
+    color: var(--color-ink-strong);
+    font-size: var(--text-md);
+  }
+  .book__desc {
+    font-size: var(--text-xs);
+    color: var(--color-neutral);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .book__count {
+    margin-top: auto;
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    color: var(--color-accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 64rem) {
+    .kb-layout {
+      grid-template-columns: 1fr;
+      gap: var(--space-lg);
+    }
+    /* 移动端：文件树置于内容上方，限高自滚 */
+    .kb-layout :global(.kbtree) {
+      position: static;
+      max-height: 40vh;
+    }
+  }
+</style>

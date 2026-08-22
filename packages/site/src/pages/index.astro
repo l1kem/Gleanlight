@@ -1,0 +1,264 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getData, featured, latest, topicPosts, postDate } from "../lib/data";
+
+const { posts, domains, topics, site } = await getData();
+const picks = featured(posts, 3);
+const recent = latest(posts, 8);
+
+const tapeFor = (i: number) => ["tape--honey tape--tl", "tape--green tape--tr", "tape--blue tape--tl"][i % 3];
+const domainTape = ["tape--green tape--tc", "tape--blue tape--tl", "tape--lilac tape--tr"];
+
+const domainsWithCount = domains.map((d) => {
+  const dTopics = topics
+    .filter((t) => t.domain_id === d.id)
+    .map((t) => ({ ...t, count: topicPosts(posts, t.id).length }))
+    .filter((t) => t.count > 0);
+  return { ...d, topics: dTopics, total: dTopics.reduce((n, t) => n + t.count, 0) };
+}).filter((d) => d.total > 0);
+---
+
+<BaseLayout>
+  {/* 定位段：手帐扉页 —— 一张贴了胶带的纸片 */}
+  <section class="intro reveal" style="--i: 0">
+    <div class="intro__card paper-card tilt-l">
+      <span class="tape tape--green tape--tc" aria-hidden="true"></span>
+      <p class="intro__line">
+        这里是<span class="intro__name">{site.author || "我"}</span>的知识库与写作间——文章按主题成册，
+        篇目互相引用，慢慢长成一座有岔路也有回廊的图书馆。
+      </p>
+    </div>
+  </section>
+
+  {/* 横带一：精选（编号角标纵排在标题上方） */}
+  {picks.length > 0 && (
+    <section class="rail reveal" style="--i: 1" aria-labelledby="rail-featured">
+      <div class="rail__head">
+        <div class="rail__label">
+          <span class="badge-num" aria-hidden="true">01</span>
+          <h2 class="rail__title" id="rail-featured">精选</h2>
+        </div>
+        <a class="rail__more" href="/posts">全部文章 →</a>
+      </div>
+      <div class="picks reveal-stagger">
+        {picks.map((p, i) => (
+          <article
+            class:list={["pick paper-card", i % 2 === 0 ? "tilt-l" : "tilt-r", { "pick--lead": i === 0 }]}
+            style={`--i: ${i}`}
+          >
+            <span class:list={["tape", tapeFor(i)]} aria-hidden="true"></span>
+            <h3 class="pick__title">
+              <a href={`/posts/${p.slug}`}>{p.title}</a>
+            </h3>
+            <p class="pick__summary">{p.summary}</p>
+            <p class="meta-line">
+              <time datetime={p.publishedAt}>{postDate(p.publishedAt)}</time>
+              <span>{p.readingTime} 分钟</span>
+              {p.topicName && <span>{p.domainName} / {p.topicName}</span>}
+            </p>
+          </article>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {/* 横带二：知识库（域 → 主题导读，书架贴纸卡） */}
+  {domainsWithCount.length > 0 && (
+    <section class="rail reveal" style="--i: 2" aria-labelledby="rail-kb">
+      <div class="rail__head">
+        <div class="rail__label">
+          <span class="badge-num" aria-hidden="true">02</span>
+          <h2 class="rail__title" id="rail-kb">知识库</h2>
+        </div>
+        <a class="rail__more" href="/kb">全部图谱 →</a>
+      </div>
+      <div class="kbmap reveal-stagger">
+        {domainsWithCount.map((d, i) => (
+          <div
+            class:list={["kbmap__domain paper-card", i % 2 === 0 ? "tilt-l" : "tilt-r"]}
+            style={`--i: ${i}`}
+          >
+            <span class:list={["tape", domainTape[i % 3]]} aria-hidden="true"></span>
+            <h3 class="kbmap__name">{d.name}</h3>
+            <p class="kbmap__desc">{d.description}</p>
+            <ul class="kbmap__topics">
+              {d.topics.map((t) => (
+                <li>
+                  <a href={`/kb/${t.slug}`}>
+                    {t.name}<span class="kbmap__count">{t.count}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {/* 横带三：最新（列表即设计） */}
+  {recent.length > 0 && (
+    <section class="rail reveal" style="--i: 3" aria-labelledby="rail-latest">
+      <div class="rail__head">
+        <div class="rail__label">
+          <span class="badge-num" aria-hidden="true">03</span>
+          <h2 class="rail__title" id="rail-latest">最近更新</h2>
+        </div>
+        <a class="rail__more" href="/archives">归档 →</a>
+      </div>
+      <ul class="rowlist reveal-stagger">
+        {recent.map((p, i) => (
+          <li style={`--i: ${Math.min(i, 8)}`}>
+            <time datetime={p.publishedAt}>{postDate(p.publishedAt)}</time>
+            <a class="rowlist__title" href={`/posts/${p.slug}`}>{p.title}</a>
+            {p.topicName && <span class="rowlist__meta">{p.topicName}</span>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {posts.length === 0 && (
+    <section class="rail reveal" style="--i: 1">
+      <p class="empty">
+        书架还空着。去后台写下第一篇，点「构建并发布」，这里就会亮起来。
+      </p>
+    </section>
+  )}
+</BaseLayout>
+
+<style>
+  .intro {
+    max-width: var(--measure);
+    margin-inline: auto;
+  }
+  .intro__card {
+    padding: var(--space-lg) var(--space-xl) var(--space-md);
+  }
+  .intro__line {
+    margin: 0;
+    font-size: var(--text-lg);
+    line-height: 2;
+    color: var(--color-ink);
+  }
+  .intro__name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+
+  /* 横带头：角标在上、标题在下（纵排） */
+  .rail__label {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+  }
+
+  /* 精选：首篇占双栏做“头条”，其余单栏——不对称纸片墙 */
+  .picks {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--space-xl) var(--space-lg);
+  }
+  .pick {
+    min-width: 0;
+    grid-column: span 2;
+    padding: var(--space-lg) var(--space-lg) var(--space-md);
+  }
+  .pick--lead {
+    grid-column: span 4;
+  }
+  .pick__title {
+    margin: 0 0 var(--space-xs);
+    font-size: var(--text-lg);
+    line-height: var(--leading-snug);
+  }
+  .pick--lead .pick__title {
+    font-size: var(--text-2xl);
+  }
+  .pick__title a {
+    color: var(--color-ink-strong);
+    text-decoration: none;
+  }
+  .pick__title a:hover {
+    color: var(--color-accent);
+  }
+  .pick__summary {
+    margin: 0 0 var(--space-sm);
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .pick .meta-line {
+    margin: 0;
+  }
+
+  /* 知识库导读：域块贴纸卡错落两列 */
+  .kbmap {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: var(--space-xl) var(--space-lg);
+    align-items: start;
+  }
+  .kbmap__domain {
+    padding: var(--space-lg) var(--space-md) var(--space-sm);
+  }
+  .kbmap__name {
+    margin: 0 0 var(--space-3xs);
+    font-size: var(--text-md);
+  }
+  .kbmap__desc {
+    margin: 0 0 var(--space-sm);
+    font-size: var(--text-sm);
+    color: var(--color-neutral);
+  }
+  .kbmap__topics {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .kbmap__topics a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-md);
+    padding-block: var(--space-2xs);
+    border-bottom: 1px dashed var(--color-rule);
+    color: var(--color-ink);
+    text-decoration: none;
+  }
+  .kbmap__topics a:hover {
+    color: var(--color-accent);
+  }
+  .kbmap__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5em;
+    height: 1.5em;
+    font-size: var(--text-xs);
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+    border-radius: 50%;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .empty {
+    color: var(--color-muted);
+    font-size: var(--text-md);
+  }
+
+  @media (max-width: 48rem) {
+    .picks {
+      grid-template-columns: 1fr;
+    }
+    .pick,
+    .pick--lead {
+      grid-column: auto;
+    }
+  }
+</style>

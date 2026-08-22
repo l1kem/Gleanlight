@@ -1,0 +1,11 @@
+{
+  "name": "@gleanlight/tokens",
+  "version": "0.1.0-beta.1",
+  "private": true,
+  "description": "前后台共享的设计 token（Hallmark · Newsprint）",
+  "main": "tokens.css",
+  "exports": {
+    ".": "./tokens.css",
+    "./tokens.css": "./tokens.css"
+  }
+}

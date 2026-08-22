@@ -1,0 +1,71 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getData } from "../lib/data";
+
+const { site, posts } = await getData();
+---
+
+<BaseLayout title="关于" description={`${site.author} · ${site.description}`}>
+  <section class="about reveal" style="--i: 0">
+    <div class="about__sheet paper-card tilt-l">
+      <span class="tape tape--blue tape--tc" aria-hidden="true"></span>
+      <h1>关于{site.author ? ` ${site.author}` : "这里"}</h1>
+      <div class="about__body">
+        <p>{site.description}。</p>
+        <p>{site.mastheadIntro}</p>
+        <p>
+          这个站点没有评论区、没有追踪脚本、没有动态服务——它只是一叠安静的静态页面，
+          由一间小书房写就，每次发布整体重新排版装订。文章间的
+          <span class="mono">[[ ]]</span> 引用让知识彼此相连。
+        </p>
+        <p>
+          目前共 {posts.length} 篇文章。订阅可走 <a href="/rss.xml">RSS</a>。
+        </p>
+      </div>
+      {site.social.length > 0 && (
+        <div class="about__social">
+          {site.social.map((s) => (
+            <a class="taglink" href={s.url} rel="noopener">{s.label}</a>
+          ))}
+        </div>
+      )}
+    </div>
+    <p class="about__note"><span class="stamp">{site.title}</span>{site.footerNote}</p>
+  </section>
+</BaseLayout>
+
+<style>
+  .about {
+    max-width: var(--measure);
+    margin-inline: auto;
+  }
+  .about__sheet {
+    padding: var(--space-xl) var(--space-xl) var(--space-lg);
+  }
+  .about h1 {
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    margin: 0 0 var(--space-lg);
+  }
+  .about__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    font-size: var(--text-md);
+    line-height: var(--leading-body);
+  }
+  .about__social {
+    margin-top: var(--space-lg);
+    display: flex;
+    gap: var(--space-2xs);
+    flex-wrap: wrap;
+  }
+  .about__note {
+    margin: var(--space-2xl) 0 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    color: var(--color-muted);
+    font-family: var(--font-display);
+  }
+</style>

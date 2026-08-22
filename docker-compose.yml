@@ -1,0 +1,28 @@
+# Gleanlight · 拾光集 —— 自托管知识库 + 博客
+#
+#   docker compose up -d --build
+#
+#   后台          http://<host>:7300
+#   数据/备份     ./docker-data  （SQLite + 附件，拷走即迁移）
+#   发布产物      ./public-dist  （纯静态，可交给 Nginx/CDN 托管）
+#   初始账号      首次启动自动创建；随机密码见 `docker compose logs`
+#                 也可在下方 environment 预设 ADMIN_USER / ADMIN_PASSWORD
+
+services:
+  gleanlight:
+    build: .
+    image: gleanlight:latest
+    container_name: gleanlight
+    restart: unless-stopped
+    ports:
+      - "7300:7300"
+    environment:
+      BLOG_HOST: 0.0.0.0
+      BLOG_PORT: "7300"
+      BLOG_DATA_DIR: /data
+      # BLOG_SITE_URL: https://your-domain.example   # RSS / sitemap 绝对地址
+      # ADMIN_USER: admin
+      # ADMIN_PASSWORD: change-me
+    volumes:
+      - ./docker-data:/data
+      - ./public-dist:/app/public-dist
