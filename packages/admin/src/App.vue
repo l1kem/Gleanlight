@@ -29,9 +29,9 @@ const theme = reactive({
 
 // 界面风格：跟随前台（手帐 / 观星台），本地切换仅影响本浏览器
 const skin = reactive({
-  current: (document.documentElement.dataset.skin ?? "journal") as "journal" | "observatory",
+  current: (document.documentElement.dataset.skin ?? "journal") as "journal" | "moss",
   toggle() {
-    skin.current = skin.current === "observatory" ? "journal" : "observatory";
+    skin.current = skin.current === "moss" ? "journal" : "moss";
     if (skin.current === "journal") delete document.documentElement.dataset.skin;
     else document.documentElement.dataset.skin = skin.current;
     localStorage.setItem("blog-skin", skin.current);
@@ -66,7 +66,7 @@ async function onLogout(): Promise<void> {
         <span class="side__user">{{ auth.user?.username ?? "" }}</span>
         <div class="side__foot-actions">
           <button class="btn btn-sm" type="button" title="切换界面风格（与前台同步）" @click="skin.toggle">
-            {{ skin.current === "observatory" ? "手帐" : "观星台" }}
+            {{ skin.current === "moss" ? "手帐" : "溪石" }}
           </button>
           <button class="btn btn-sm" type="button" @click="theme.toggle">
             {{ theme.current === "dark" ? "浅色" : "深色" }}

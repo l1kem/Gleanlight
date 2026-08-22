@@ -139,7 +139,7 @@ function addSocial(): void {
         <label for="s-skin">默认界面风格</label>
         <select id="s-skin" v-model="site.skin" class="select">
           <option value="journal">手帐（米黄纸 · 文楷 · 砖红）</option>
-          <option value="observatory">观星台（深靛夜幕 · 星光金 · 竖排侧栏）</option>
+          <option value="moss">溪石（米纸 · 苔绿 · 陶土 · 有机圆角）</option>
         </select>
         <span class="hint">访客默认看到的风格；访客可在前台右上角自行切换（只记在自己的浏览器里）</span>
       </div>

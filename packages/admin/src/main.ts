@@ -5,6 +5,6 @@ import "@gleanlight/tokens/tokens.css";
 import "vditor/dist/index.css";
 import "./styles/base.css";
 import "./styles/vditor-theme.css";
-import "./styles/observatory.css";
+import "./styles/moss.css";
 
 createApp(App).use(router).mount("#app");

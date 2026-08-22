@@ -94,7 +94,7 @@ export async function getData(): Promise<{
     mastheadIntro: site.mastheadIntro ?? "",
     footerNote: site.footerNote ?? "",
     social: site.social ?? [],
-    skin: site.skin === "observatory" ? "observatory" : "journal",
+    skin: site.skin === "moss" ? "moss" : "journal",
   };
   cache = { posts, domains: structure.domains, topics: structure.topics, site: siteInfo, tags };
   return cache;
