@@ -6,6 +6,9 @@
  * ════════════════════════════════════════════════════════════════ */
 
 :root {
+  /* 原生控件（select 弹层/滚动条/日期选择）跟随主题渲染，避免深色下白底弹层 */
+  color-scheme: light;
+
   /* 色彩 · 与前台手帐一致（米纸 / 深棕墨 / 砖红朱砂） */
   --color-paper:      oklch(96.5% 0.016 90);
   --color-paper-2:    oklch(98.5% 0.012 95);
@@ -45,6 +48,8 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
+
   --color-paper:      oklch(18% 0.012 70);
   --color-paper-2:    oklch(22% 0.014 72);
   --color-paper-3:    oklch(26% 0.016 72);

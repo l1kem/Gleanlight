@@ -213,11 +213,17 @@ function dispatchPalette(): void {
   letter-spacing: 0.08em;
   color: var(--side-muted);
 }
+.side__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+}
 .side__link {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-2xs) var(--space-sm);
+  min-height: 2.25rem;
   border-radius: var(--radius-sm);
   color: var(--color-muted);
   font-size: var(--text-sm);
@@ -368,12 +374,11 @@ function dispatchPalette(): void {
     overflow-x: auto;
   }
   .side__brand { margin: 0; flex: none; }
-  .side__brand { margin: 0; }
   .side__nav {
     flex-direction: row;
     gap: var(--space-xs);
   }
-  .side__group { display: flex; gap: var(--space-2xs); }
+  .side__group { flex-direction: row; gap: var(--space-2xs); }
   .side__grouplabel { display: none; }
   .side__link span:not(.side__brandtext) { display: none; } /* 移动端只留图标 */
   .side__user { display: none; }
