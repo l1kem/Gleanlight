@@ -30,11 +30,11 @@
   --color-sticky:     oklch(94.5% 0.012 92);
 
   --font-display: "Fraunces", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
-  --font-body: "Nunito", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --font-body: "LXGW WenKai", "LXGW WenKai Lite", "Kaiti SC", "STKaiti", "KaiTi", "PingFang SC", serif;
 
-  --leading-tight: 1.28;
-  --leading-snug: 1.6;
-  --leading-body: 1.85;
+  --leading-tight: 1.3;
+  --leading-snug: 1.65;
+  --leading-body: 1.95;
 
   --radius-sm: 12px;
   --radius-md: 18px;
@@ -98,110 +98,140 @@
     radial-gradient(38% 30% at 6% 94%, oklch(70% 0.07 60 / 0.1), transparent 72%);
 }
 
-/* ── 骨架：居中门厅 + 溪石导航 ──────────────────────────────── */
+/* ── 骨架：左上小字标 + 悬浮磨砂玻璃胶囊导航 ───────────────── */
 :root[data-skin="moss"] .masthead {
+  position: static;
   border-bottom: none;
-  background: color-mix(in oklch, var(--color-paper) 86%, transparent);
-  box-shadow: 0 10px 30px -18px oklch(45% 0.025 100 / 0.35);
+  background: none;
+  backdrop-filter: none;
+  box-shadow: none;
 }
-:root[data-skin="moss"] .masthead.is-scrolled { box-shadow: 0 14px 34px -18px oklch(45% 0.025 100 / 0.45); }
+:root[data-skin="moss"] .masthead.is-scrolled { box-shadow: none; }
 :root[data-skin="moss"] .masthead__inner {
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-sm);
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-block: var(--space-md) 0;
+  gap: var(--space-md);
 }
 :root[data-skin="moss"] .masthead__brand {
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-2xs);
+  align-items: flex-start;
+  gap: var(--space-3xs);
 }
 :root[data-skin="moss"] .masthead__tape { display: none; }
 :root[data-skin="moss"] .masthead__wordmark {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: var(--text-mast);
-  letter-spacing: 0.1em;
-  text-indent: 0.1em;
+  font-size: var(--text-xl);              /* 小一点的字标 */
+  letter-spacing: 0.12em;
 }
 :root[data-skin="moss"] .masthead__intro {
-  justify-content: center;
-  text-align: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
   font-family: var(--font-body);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);              /* 字标下方的小字注 */
   color: var(--color-neutral);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
+  line-height: 1.9;
 }
 :root[data-skin="moss"] .masthead__intro-line {
   white-space: normal;
-  max-width: 30em;
+  max-width: 22em;
   overflow: visible;
   text-overflow: unset;
 }
+/* 导航 = 悬浮磨砂玻璃胶囊：窄、不贴边、圆角、模糊、悬浮影 */
 :root[data-skin="moss"] .masthead__side {
-  margin-left: 0;
-  flex-direction: column;
+  position: fixed;
+  top: var(--space-sm);
+  right: var(--space-md);
+  z-index: var(--z-sticky);
+  flex-direction: row;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-3xs);
+  padding: 0.3rem 0.5rem;
+  background: color-mix(in oklch, var(--color-paper) 62%, transparent);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  border: 1px solid color-mix(in oklch, var(--color-rule-strong) 50%, transparent);
+  border-radius: 999px;
+  box-shadow: 0 10px 30px -14px oklch(45% 0.03 100 / 0.4);
 }
-/* 导航 = 一排溪石：每颗圆角都不一样 */
 :root[data-skin="moss"] .masthead__nav {
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 2px;
 }
 :root[data-skin="moss"] .masthead__link {
-  background: var(--color-paper-2);
-  border: 1px solid var(--color-rule-strong);
-  box-shadow: 0 3px 10px -6px oklch(45% 0.025 100 / 0.3);
-  padding: var(--space-3xs) var(--space-md);
+  background: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 999px;
+  padding: var(--space-3xs) var(--space-sm);
   font-family: var(--font-body);
-  font-weight: 600;
+  font-weight: 400;
   font-size: var(--text-sm);
   color: var(--color-muted);
-  transition: transform var(--dur-short) var(--ease-out),
-    background-color var(--dur-short) var(--ease-out),
-    color var(--dur-short) var(--ease-out),
-    box-shadow var(--dur-short) var(--ease-out);
+  transition: background-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out);
 }
-:root[data-skin="moss"] .masthead__nav .masthead__link:nth-child(odd) {
-  border-radius: 16px 26px 18px 28px;
-  transform: rotate(-0.6deg);
-}
+:root[data-skin="moss"] .masthead__nav .masthead__link:nth-child(odd),
 :root[data-skin="moss"] .masthead__nav .masthead__link:nth-child(even) {
-  border-radius: 26px 16px 28px 18px;
-  transform: rotate(0.5deg);
+  border-radius: 999px;
+  transform: none;
 }
 :root[data-skin="moss"] .masthead__link:hover {
-  transform: translateY(-3px) rotate(0deg);   /* 拾起一颗溪石 */
+  transform: none;
+  background: var(--color-paper-3);
   color: var(--color-ink-strong);
-  box-shadow: 0 10px 22px -10px oklch(45% 0.03 100 / 0.4);
+  box-shadow: none;
 }
 :root[data-skin="moss"] .masthead__link.is-here {
   background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: oklch(96% 0.008 120);                /* 苔上薄雾 */
-  transform: rotate(-1deg);
+  color: oklch(96% 0.008 120);
+  transform: none;
 }
 :root[data-skin="moss"] .masthead__link.is-here:hover {
-  transform: translateY(-3px) rotate(-1deg);
+  transform: none;
 }
-:root[data-skin="moss"] .masthead__modes { gap: var(--space-xs); }
+:root[data-skin="moss"] .masthead__modes { gap: 2px; }
 :root[data-skin="moss"] .masthead__skin,
 :root[data-skin="moss"] .masthead__theme {
-  background: var(--color-paper-2);
-  border: 1px solid var(--color-rule-strong);
-  border-radius: 20px 14px 22px 16px;
+  background: none;
+  border: none;
+  border-radius: 999px;
   transform: none;
+  box-shadow: none;
+  padding: var(--space-3xs) var(--space-sm);
   font-family: var(--font-body);
-  font-weight: 600;
+  font-weight: 400;
+  font-size: var(--text-xs);
 }
 :root[data-skin="moss"] .masthead__skin:hover,
 :root[data-skin="moss"] .masthead__theme:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
+  transform: none;
+  background: var(--color-paper-3);
+  color: var(--color-ink-strong);
 }
 :root[data-skin="moss"] .progress { background: var(--color-accent); }
+
+/* 中屏以下：玻璃条收回文档流，换行铺开（fixed 会盖内容） */
+@media (max-width: 72rem) {
+  :root[data-skin="moss"] .masthead__side {
+    position: static;
+    flex-wrap: wrap;
+    background: color-mix(in oklch, var(--color-paper) 62%, transparent);
+    backdrop-filter: blur(16px) saturate(1.5);
+    -webkit-backdrop-filter: blur(16px) saturate(1.5);
+    border: 1px solid color-mix(in oklch, var(--color-rule-strong) 50%, transparent);
+    border-radius: 22px 26px 20px 24px;
+    padding: 0.4rem 0.6rem;
+    margin-top: var(--space-sm);
+  }
+  :root[data-skin="moss"] .masthead__nav { flex-wrap: wrap; }
+}
 
 /* ── 卡片：有机圆角轮换 + 大地色温柔影 + 溪石悬停 ───────────── */
 :root[data-skin="moss"] .paper-card {

@@ -41,10 +41,9 @@ const { index } = Astro.props;
 
 <script define:vars={{ index }}>
   (function () {
-    var layer = document.getElementById("search-layer");
-    var input = document.getElementById("search-input");
-    var results = document.getElementById("search-results");
-    var count = document.getElementById("search-count");
+    // 软导航（ClientRouter swap）会替换 DOM：元素必须每次现场查询，
+    // 缓存引用会指向被移除的旧节点（曾导致点击搜索无反应）。
+    var byId = function (id) { return document.getElementById(id); };
     var current = [];
 
     function esc(s) {
@@ -55,6 +54,8 @@ const { index } = Astro.props;
 
     function render(items) {
       current = items;
+      var results = byId("search-results");
+      var count = byId("search-count");
       results.innerHTML = items
         .slice(0, 30)
         .map(function (p, i) {
@@ -87,6 +88,9 @@ const { index } = Astro.props;
     }
 
     function open() {
+      var layer = byId("search-layer");
+      var input = byId("search-input");
+      if (!layer) return;
       layer.hidden = false;
       layer.setAttribute("aria-hidden", "false");
       document.documentElement.style.overflow = "hidden";
@@ -98,13 +102,11 @@ const { index } = Astro.props;
     }
 
     function close() {
+      var layer = byId("search-layer");
+      if (!layer) return;
       layer.hidden = true;
       layer.setAttribute("aria-hidden", "true");
       document.documentElement.style.overflow = "";
-    }
-
-    function toggle() {
-      layer.hidden ? open() : close();
     }
 
     document.addEventListener("click", function (e) {
@@ -114,12 +116,15 @@ const { index } = Astro.props;
         open();
         return;
       }
-      if (e.target.closest("[data-search-close]") || e.target === layer) {
+      var layer = byId("search-layer");
+      if (e.target.closest("[data-search-close]") || (layer && e.target === layer)) {
         close();
       }
     });
 
     document.addEventListener("keydown", function (e) {
+      var layer = byId("search-layer");
+      if (!layer) return;
       if (e.key === "Escape" && !layer.hidden) {
         close();
         return;
@@ -134,8 +139,9 @@ const { index } = Astro.props;
       }
     });
 
-    input.addEventListener("input", function (e) {
-      search(e.target.value);
+    // input 事件委托：软导航后的新输入框同样生效
+    document.addEventListener("input", function (e) {
+      if (e.target && e.target.id === "search-input") search(e.target.value);
     });
   })();
 </script>
