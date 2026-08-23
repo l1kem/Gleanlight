@@ -16,13 +16,14 @@ services:
     container_name: gleanlight
     restart: unless-stopped
     ports:
-      - "7300:7300"   # 后台（部署时建议只对内网开放）
+      - "127.0.0.1:7300:7300" # 后台默认仅宿主机可访问；经 VPN/反代开放时再显式修改
       - "4321:7301"   # 前台静态站（可对外）
     environment:
       BLOG_HOST: 0.0.0.0
       BLOG_PORT: "7300"
       BLOG_FRONT_PORT: "7301"
       BLOG_DATA_DIR: /data
+      BLOG_BACKUP_KEEP: "10"
       # BLOG_SITE_URL: https://your-domain.example   # RSS / sitemap 绝对地址
       # ADMIN_USER: admin
       # ADMIN_PASSWORD: change-me

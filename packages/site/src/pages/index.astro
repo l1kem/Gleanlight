@@ -19,28 +19,29 @@ const domainsWithCount = domains.map((d) => {
 ---
 
 <BaseLayout>
-  {/* 定位段：手帐扉页 —— 一张贴了胶带的纸片 */}
-  <section class="intro reveal" style="--i: 0">
+  {/* 定位段：一张真正承担首页主标题的扉页 */}
+  <section class="intro intro--entry">
     <div class="intro__card paper-card tilt-l">
       <span class="tape tape--green tape--tc" aria-hidden="true"></span>
+      <h1 class="intro__title">
+        <span class="intro__name">{site.author || "我"}</span>的知识库与写作间
+      </h1>
       <p class="intro__line">
-        这里是<span class="intro__name">{site.author || "我"}</span>的知识库与写作间——文章按主题成册，
-        篇目互相引用，慢慢长成一座有岔路也有回廊的图书馆。
+        文章按主题成册，篇目互相引用，慢慢长成一座有岔路也有回廊的图书馆。
       </p>
     </div>
   </section>
 
   {/* 横带一：精选（编号角标纵排在标题上方） */}
   {picks.length > 0 && (
-    <section class="rail reveal" style="--i: 1" aria-labelledby="rail-featured">
+    <section class="rail" aria-labelledby="rail-featured">
       <div class="rail__head">
         <div class="rail__label">
-          <span class="badge-num" aria-hidden="true">01</span>
           <h2 class="rail__title" id="rail-featured">精选</h2>
         </div>
         <a class="rail__more" href="/posts">全部文章 →</a>
       </div>
-      <div class="picks reveal-stagger">
+      <div class="picks">
         {picks.map((p, i) => (
           <article
             class:list={["pick paper-card", i % 2 === 0 ? "tilt-l" : "tilt-r", { "pick--lead": i === 0 }]}
@@ -64,15 +65,14 @@ const domainsWithCount = domains.map((d) => {
 
   {/* 横带二：知识库（域 → 主题导读，书架贴纸卡） */}
   {domainsWithCount.length > 0 && (
-    <section class="rail reveal" style="--i: 2" aria-labelledby="rail-kb">
+    <section class="rail" aria-labelledby="rail-kb">
       <div class="rail__head">
         <div class="rail__label">
-          <span class="badge-num" aria-hidden="true">02</span>
           <h2 class="rail__title" id="rail-kb">知识库</h2>
         </div>
         <a class="rail__more" href="/kb">全部图谱 →</a>
       </div>
-      <div class="kbmap reveal-stagger">
+      <div class="kbmap">
         {domainsWithCount.map((d, i) => (
           <div
             class:list={["kbmap__domain paper-card", i % 2 === 0 ? "tilt-l" : "tilt-r"]}
@@ -98,15 +98,14 @@ const domainsWithCount = domains.map((d) => {
 
   {/* 横带三：最新（列表即设计） */}
   {recent.length > 0 && (
-    <section class="rail reveal" style="--i: 3" aria-labelledby="rail-latest">
+    <section class="rail" aria-labelledby="rail-latest">
       <div class="rail__head">
         <div class="rail__label">
-          <span class="badge-num" aria-hidden="true">03</span>
           <h2 class="rail__title" id="rail-latest">最近更新</h2>
         </div>
         <a class="rail__more" href="/archives">归档 →</a>
       </div>
-      <ul class="rowlist reveal-stagger">
+      <ul class="rowlist">
         {recent.map((p, i) => (
           <li style={`--i: ${Math.min(i, 8)}`}>
             <time datetime={p.publishedAt}>{postDate(p.publishedAt)}</time>
@@ -119,7 +118,7 @@ const domainsWithCount = domains.map((d) => {
   )}
 
   {posts.length === 0 && (
-    <section class="rail reveal" style="--i: 1">
+    <section class="rail">
       <p class="empty">
         书架还空着。去后台写下第一篇，点「构建并发布」，这里就会亮起来。
       </p>
@@ -129,16 +128,24 @@ const domainsWithCount = domains.map((d) => {
 
 <style>
   .intro {
-    max-width: var(--measure);
-    margin-inline: auto;
+    max-width: 58rem;
+    margin-inline: clamp(0rem, 6vw, 5rem) auto;
   }
   .intro__card {
-    padding: var(--space-lg) var(--space-xl) var(--space-md);
+    padding: var(--space-xl) clamp(var(--space-lg), 5vw, var(--space-2xl)) var(--space-2xl);
+  }
+  .intro__title {
+    max-width: 24ch;
+    margin: 0 0 var(--space-sm);
+    font-size: clamp(var(--text-2xl), 4vw, var(--text-3xl));
+    line-height: var(--leading-snug);
+    min-width: 0;
   }
   .intro__line {
     margin: 0;
-    font-size: var(--text-lg);
-    line-height: 2;
+    max-width: 34em;
+    font-size: var(--text-md);
+    line-height: var(--leading-body);
     color: var(--color-ink);
   }
   .intro__name {
@@ -147,7 +154,7 @@ const domainsWithCount = domains.map((d) => {
     color: var(--color-accent);
   }
 
-  /* 横带头：角标在上、标题在下（纵排） */
+  /* 横带头不再使用装饰性章节编号，标题直接承担层级。 */
   .rail__label {
     display: flex;
     flex-direction: column;
@@ -168,6 +175,13 @@ const domainsWithCount = domains.map((d) => {
   }
   .pick--lead {
     grid-column: span 4;
+  }
+  .picks:has(> :only-child) .pick {
+    grid-column: 1 / -1;
+    max-width: 46rem;
+  }
+  .picks:has(> :nth-child(2):last-child) .pick {
+    grid-column: span 3;
   }
   .pick__title {
     margin: 0 0 var(--space-xs);

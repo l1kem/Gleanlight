@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       "/api": "http://127.0.0.1:7300",
       "/media": "http://127.0.0.1:7300",
+      "/uploads": "http://127.0.0.1:7300",
     },
   },
 });

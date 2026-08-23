@@ -92,8 +92,19 @@ function init(mode: "sv" | "ir"): void {
   });
 }
 
-onMounted(() => init(currentMode.value));
-onBeforeUnmount(() => vd?.destroy());
+function onThemeChange(e: Event): void {
+  const dark = (e as CustomEvent<string>).detail === "dark";
+  vd?.setTheme(dark ? "dark" : "classic");
+}
+
+onMounted(() => {
+  init(currentMode.value);
+  window.addEventListener("blog-theme-change", onThemeChange);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("blog-theme-change", onThemeChange);
+  vd?.destroy();
+});
 
 // 外部赋值（文章异步加载/版本回滚/AI 改写）同步进编辑器。
 // 编辑器聚焦中视为用户输入态，跳过回写，避免打字时 setValue 打断光标
@@ -112,11 +123,6 @@ function setMode(mode: "sv" | "ir"): void {
   currentMode.value = mode;
   init(mode);
 }
-
-window.addEventListener("blog-theme-change", (e) => {
-  const dark = (e as CustomEvent<string>).detail === "dark";
-  vd?.setTheme(dark ? "dark" : "classic");
-});
 
 defineExpose({
   getSelection(): string {

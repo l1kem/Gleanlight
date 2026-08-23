@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { db } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { extractWikilinks, readingTime } from "@gleanlight/markdown";
+import { normalizeScheduledAt } from "../lib/time.js";
 
 export interface PostRow {
   id: number;
@@ -144,6 +145,10 @@ export async function postRoutes(app: FastifyInstance): Promise<void> {
     const title = (b.title ?? "").trim() || "未命名草稿";
     const slug = uniqueSlug(b.slug ? slugify(String(b.slug)) : slugify(title));
     const contentMd = b.content_md ?? "";
+    const scheduledAt = normalizeScheduledAt(b.scheduled_at);
+    if (scheduledAt === undefined) {
+      return reply.code(400).send({ error: "定时发布时间格式无效" });
+    }
     const info = db
       .prepare(
         `INSERT INTO posts(slug, title, summary, content_md, status, featured, topic_id, sort_in_topic, tags, cover, scheduled_at)
@@ -159,7 +164,7 @@ export async function postRoutes(app: FastifyInstance): Promise<void> {
         b.sort_in_topic ?? 0,
         JSON.stringify(parseTags(b.tags)),
         b.cover ?? null,
-        b.scheduled_at ?? null
+        scheduledAt
       );
     syncDerived(Number(info.lastInsertRowid), contentMd);
     return reply.code(201).send({ id: Number(info.lastInsertRowid), slug });
@@ -181,8 +186,11 @@ export async function postRoutes(app: FastifyInstance): Promise<void> {
         : existing.slug;
     const status =
       b.status === "published" || b.status === "draft" ? b.status : existing.status;
-    const scheduledAt =
-      b.scheduled_at !== undefined ? (b.scheduled_at ? String(b.scheduled_at) : null) : existing.scheduled_at;
+    const normalizedScheduledAt =
+      b.scheduled_at !== undefined ? normalizeScheduledAt(b.scheduled_at) : existing.scheduled_at;
+    if (normalizedScheduledAt === undefined) {
+      return reply.code(400).send({ error: "定时发布时间格式无效" });
+    }
 
     // 内容实质变化才快照（纯改元数据不产生版本噪音）
     if (contentMd !== existing.content_md || title !== existing.title || summary !== existing.summary) {
@@ -205,7 +213,7 @@ export async function postRoutes(app: FastifyInstance): Promise<void> {
       b.sort_in_topic !== undefined ? Number(b.sort_in_topic) : existing.sort_in_topic,
       b.tags !== undefined ? JSON.stringify(parseTags(b.tags)) : existing.tags,
       b.cover !== undefined ? b.cover : existing.cover,
-      scheduledAt,
+      normalizedScheduledAt,
       b.private !== undefined ? (b.private ? 1 : 0) : existing.private,
       status,
       pid

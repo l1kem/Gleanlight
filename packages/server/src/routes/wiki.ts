@@ -17,7 +17,7 @@ import { extractWikilinks, readingTime } from "@gleanlight/markdown";
 
 const SKIP_DIRS = new Set([".obsidian", ".trash", ".stfolder", "node_modules", ".git"]);
 const ATTACH_EXTS = new Set([
-  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".bmp",
+  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".bmp",
   ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".mp3", ".mp4", ".zip",
 ]);
 const MAX_IMPORT_FILES = 2000;
@@ -70,6 +70,11 @@ function titleOf(fm: Record<string, string>, body: string, filename: string): st
 
 function expandHome(p: string): string {
   return p.startsWith("~") ? path.join(os.homedir(), p.slice(1)) : p;
+}
+
+function isWithin(root: string, candidate: string): boolean {
+  const rel = path.relative(root, candidate);
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
 export async function wikiRoutes(app: FastifyInstance): Promise<void> {
@@ -175,7 +180,7 @@ export async function wikiRoutes(app: FastifyInstance): Promise<void> {
     const mimeOf = (ext: string): string => {
       const map: Record<string, string> = {
         ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif",
-        ".webp": "image/webp", ".svg": "image/svg+xml", ".avif": "image/avif", ".bmp": "image/bmp",
+        ".webp": "image/webp", ".avif": "image/avif", ".bmp": "image/bmp",
         ".pdf": "application/pdf",
         ".doc": "application/msword", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         ".xls": "application/vnd.ms-excel", ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -211,6 +216,7 @@ export async function wikiRoutes(app: FastifyInstance): Promise<void> {
       return id;
     }
     function importAttachment(absPath: string): string | null {
+      if (!isWithin(root, absPath)) return null;
       if (mediaCache.has(absPath)) return mediaCache.get(absPath)!;
       let stat: fs.Stats;
       try {

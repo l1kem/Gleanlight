@@ -4,7 +4,7 @@
  * 大地色（米纸/深壤/苔绿/陶土/砂/干草）、带色温的柔影（不用纯黑）、
  * 不对称的错落节奏、悬停如拾起一枚溪石（上浮 + 轻放大）。
  * 字体：Fraunces（衬线，拉丁）+ Noto Serif SC/宋体（中文标题）；
- *      Nunito（圆端，拉丁）+ 苹方（中文正文）。
+ *      霞鹜文楷 + 系统楷体（正文）。
  * 明暗：日溪（light）/ 夜溪（dark）。
  * 切换：导航按钮 data-skin-toggle；站长默认在后台设置（site.skin=moss）。
  * ════════════════════════════════════════════════════════════════ */
@@ -21,13 +21,17 @@
   --color-ink:        oklch(28% 0.014 100);    /* #2C2C24 深壤 */
   --color-ink-strong: oklch(21% 0.013 100);    /* 腐殖土 */
   --color-accent:     oklch(51% 0.06 130);     /* #5D7052 苔绿 */
-  --color-accent-ink: oklch(42% 0.06 130);     /* 深苔 */
+  --color-accent-strong: oklch(42% 0.06 130);  /* 深苔 */
+  --color-accent-ink: oklch(98% 0.006 95);
   --color-accent-wash: oklch(94.5% 0.015 130); /* 苔痕水洗 */
   --color-focus:      oklch(51% 0.06 130);
   --color-danger:     oklch(48% 0.09 35);      /* #A85448 焦赭 */
   --color-success:    oklch(50% 0.07 140);
   --color-selection-bg: oklch(92% 0.02 90);    /* #E6DCCD 砂 */
   --color-sticky:     oklch(94.5% 0.012 92);
+  --color-earth-haze: oklch(70% 0.070 60 / 0.10);
+  --color-earth:      oklch(66% 0.075 60);
+  --color-on-earth:   oklch(97% 0.008 90);
 
   --font-display: "Fraunces", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
   --font-body: "LXGW WenKai", "LXGW WenKai Lite", "Kaiti SC", "STKaiti", "KaiTi", "PingFang SC", serif;
@@ -42,6 +46,10 @@
   --radius-pill: 999px;
   /* 柔影带大地色温，不用纯黑 */
   --shadow-paper: 0 8px 24px -10px oklch(45% 0.025 100 / 0.28);
+  --shadow-nav: 0 10px 30px -14px oklch(45% 0.030 100 / 0.40);
+  --shadow-stamp: 0 4px 12px -6px oklch(48% 0.080 45 / 0.50);
+  --shadow-search: 0 24px 60px -20px oklch(45% 0.035 100 / 0.50);
+  --z-grain: calc(var(--z-toast) + 1);
   --text-mast: clamp(1.7rem, 2vw + 1.1rem, 2.2rem);
 }
 
@@ -57,14 +65,21 @@
   --color-ink:        oklch(89% 0.008 95);
   --color-ink-strong: oklch(95% 0.006 95);
   --color-accent:     oklch(72% 0.06 130);     /* 月下苔 */
-  --color-accent-ink: oklch(80% 0.05 130);
+  --color-accent-strong: oklch(80% 0.05 130);
+  --color-accent-ink: oklch(19% 0.008 95);
   --color-accent-wash: oklch(30% 0.02 130);
   --color-focus:      oklch(72% 0.06 130);
   --color-danger:     oklch(66% 0.1 35);
   --color-success:    oklch(68% 0.07 140);
   --color-selection-bg: oklch(32% 0.025 90);
   --color-sticky:     oklch(26% 0.012 92);
+  --color-earth-haze: oklch(38% 0.045 60 / 0.14);
+  --color-earth:      oklch(70% 0.065 60);
+  --color-on-earth:   oklch(18% 0.010 95);
   --shadow-paper: 0 8px 24px -10px oklch(10% 0.01 95 / 0.5);
+  --shadow-nav: 0 10px 30px -14px oklch(8% 0.010 95 / 0.58);
+  --shadow-stamp: 0 4px 12px -6px oklch(8% 0.010 95 / 0.52);
+  --shadow-search: 0 24px 60px -20px oklch(8% 0.010 95 / 0.68);
 }
 
 /* ── 纸感颗粒：全局噪点叠层（日=正片叠底 3.5%，夜=柔光 6%）──── */
@@ -72,7 +87,7 @@
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: var(--z-grain);
   pointer-events: none;
   opacity: 0.035;
   mix-blend-mode: multiply;
@@ -95,7 +110,7 @@
   pointer-events: none;
   background:
     radial-gradient(42% 30% at 88% 6%, color-mix(in oklch, var(--color-accent) 9%, transparent), transparent 72%),
-    radial-gradient(38% 30% at 6% 94%, oklch(70% 0.07 60 / 0.1), transparent 72%);
+    radial-gradient(38% 30% at 6% 94%, var(--color-earth-haze), transparent 72%);
 }
 
 /* ── 骨架：左上小字标 + 悬浮磨砂玻璃胶囊导航 ───────────────── */
@@ -157,7 +172,7 @@
   -webkit-backdrop-filter: blur(16px) saturate(1.5);
   border: 1px solid color-mix(in oklch, var(--color-rule-strong) 50%, transparent);
   border-radius: 999px;
-  box-shadow: 0 10px 30px -14px oklch(45% 0.03 100 / 0.4);
+  box-shadow: var(--shadow-nav);
 }
 :root[data-skin="moss"] .masthead__nav {
   justify-content: flex-start;
@@ -185,12 +200,11 @@
 :root[data-skin="moss"] .masthead__link:hover {
   transform: none;
   background: var(--color-paper-3);
-  color: var(--color-ink-strong);
   box-shadow: none;
 }
 :root[data-skin="moss"] .masthead__link.is-here {
   background: var(--color-accent);
-  color: oklch(96% 0.008 120);
+  color: var(--color-accent-ink);
   transform: none;
 }
 :root[data-skin="moss"] .masthead__link.is-here:hover {
@@ -213,7 +227,11 @@
 :root[data-skin="moss"] .masthead__theme:hover {
   transform: none;
   background: var(--color-paper-3);
-  color: var(--color-ink-strong);
+}
+:root[data-skin="moss"] .masthead__link:active,
+:root[data-skin="moss"] .masthead__skin:active,
+:root[data-skin="moss"] .masthead__theme:active {
+  transform: translateY(1px);
 }
 :root[data-skin="moss"] .progress { background: var(--color-accent); }
 
@@ -254,8 +272,7 @@
 :root[data-skin="moss"] a.paper-card:focus-visible,
 :root[data-skin="moss"] .link-card:hover,
 :root[data-skin="moss"] .link-card:focus-visible {
-  transform: translateY(-5px) scale(1.01);
-  box-shadow: 0 16px 34px -14px oklch(45% 0.035 100 / 0.42);
+  transform: translateY(-3px);
 }
 
 /* ── 装饰语汇：手帐元素退场 → 圆点与石章 ───────────────────── */
@@ -265,11 +282,11 @@
 :root[data-skin="moss"] .letterfoot__cat,
 :root[data-skin="moss"] .letterfoot__stamp { display: none; }
 :root[data-skin="moss"] .badge-num {
-  background: oklch(66% 0.075 60);            /* 陶土 */
-  color: #fff;
+  background: var(--color-earth);              /* 陶土 */
+  color: var(--color-on-earth);
   border-radius: 14px 20px 12px 18px;
   transform: rotate(-2.5deg);
-  box-shadow: 0 4px 12px -6px oklch(48% 0.08 45 / 0.5);
+  box-shadow: var(--shadow-stamp);
   font-family: var(--font-body);
 }
 /* 标题波浪线 → 无；节名前置一枚小苔点 */
@@ -304,9 +321,7 @@
   color: var(--color-muted);
 }
 :root[data-skin="moss"] .taglink:hover {
-  transform: translateY(-2px);
   color: var(--color-accent);
-  border-color: var(--color-accent);
 }
 :root[data-skin="moss"] .rowlist > li { border-bottom: 1px solid var(--color-rule); }
 :root[data-skin="moss"] .rowlist time { font-weight: 600; color: var(--color-neutral); }
@@ -317,7 +332,7 @@
   border: 1px solid var(--color-rule);
   border-radius: 34px 26px 36px 22px;
   box-shadow: var(--shadow-paper);
-  padding: var(--space-xl) var(--space-2xl);
+  padding: var(--space-xl) var(--space-2xl) var(--space-2xl);
 }
 :root[data-skin="moss"] .intro__line {
   font-size: var(--text-lg);
@@ -403,7 +418,7 @@
 :root[data-skin="moss"] .path__no {
   background: var(--color-accent);
   border-radius: 48% 52% 44% 56% / 56% 46% 54% 44%;
-  box-shadow: 0 4px 12px -6px oklch(42% 0.06 130 / 0.55);
+  box-shadow: var(--shadow-stamp);
   font-family: var(--font-body);
   font-weight: 700;
 }
@@ -412,7 +427,7 @@
 :root[data-skin="moss"] .search-dialog {
   border: 1px solid var(--color-rule-strong);
   border-radius: 30px 24px 32px 26px;
-  box-shadow: 0 24px 60px -20px oklch(45% 0.035 100 / 0.5);
+  box-shadow: var(--shadow-search);
 }
 :root[data-skin="moss"] .search-bar { border-bottom: 1px solid var(--color-rule); }
 :root[data-skin="moss"] .search-hit { border-radius: 14px 18px 12px 16px; }

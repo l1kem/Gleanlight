@@ -11,7 +11,9 @@ import hljs from "highlight.js";
  */
 
 const md: MarkdownIt = new MarkdownIt({
-  html: true,
+  // 文章会同时进入 Astro set:html 与后台 v-html。默认拒绝原始 HTML，
+  // 避免导入的 Markdown 把 <script> / 事件属性带进同源页面。
+  html: false,
   linkify: true,
   highlight(code: string, lang: string): string {
     if (lang && hljs.getLanguage(lang)) {

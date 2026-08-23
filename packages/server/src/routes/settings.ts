@@ -10,7 +10,7 @@ export interface SiteSettings {
   mastheadIntro: string; // 刊头下一行的自我介绍
   footerNote: string; // 页脚书信式落款
   social: { label: string; url: string }[];
-  skin: string; // 前台默认皮肤：journal | plain | ink | celadon（访客可在 /themes 临时切换）
+  skin: string; // 前台默认皮肤：journal | moss（访客可在导航临时切换）
 }
 
 export interface AiSettings {

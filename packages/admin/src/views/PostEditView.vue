@@ -171,14 +171,19 @@ async function save(): Promise<void> {
   }
 }
 
-// ── 定时发布：datetime-local ⇆ sqlite "YYYY-MM-DD HH:MM:SS" ──
+// ── 定时发布：datetime-local（访客本地）⇆ ISO UTC ──────────────
 function toLocalInput(sqlTs: string): string {
   if (!sqlTs) return "";
-  return sqlTs.slice(0, 16).replace(" ", "T");
+  const normalized = sqlTs.includes("T") ? sqlTs : `${sqlTs.replace(" ", "T")}Z`;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
 }
 function toSqlTs(localInput: string): string | null {
   if (!localInput) return null;
-  return `${localInput.replace("T", " ")}:00`;
+  const date = new Date(localInput);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 // ── 版本历史 ─────────────────────────────────────────────────
@@ -525,7 +530,7 @@ const topicSelectOptions = computed(() =>
     </div>
 
     <div v-if="previewOpen" class="preview-layer" @click.self="previewOpen = false">
-      <div class="preview-box">
+      <div class="preview-box" role="dialog" aria-modal="true" aria-label="前台渲染预览">
         <div class="preview-bar">
           <strong>前台渲染预览</strong>
           <button class="btn btn-sm" type="button" @click="previewOpen = false">关闭</button>
@@ -536,7 +541,7 @@ const topicSelectOptions = computed(() =>
     </div>
 
     <div v-if="revView" class="preview-layer" @click.self="revView = null">
-      <div class="preview-box">
+      <div class="preview-box" role="dialog" aria-modal="true" aria-label="版本快照">
         <div class="preview-bar">
           <strong>版本快照 · {{ revView.created_at.slice(0, 16) }} · {{ revView.title }}</strong>
           <div class="preview-bar__ops">
@@ -734,7 +739,7 @@ const topicSelectOptions = computed(() =>
   position: fixed;
   inset: 0;
   z-index: var(--z-modal);
-  background: oklch(20% 0.01 60 / 0.5);
+  background: var(--color-scrim);
   display: grid;
   place-items: center;
   padding: var(--space-lg);

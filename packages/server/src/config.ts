@@ -21,6 +21,7 @@ export const ADMIN_DIST = path.join(PKG_ADMIN, "dist");
 // 默认绑定回环地址；Docker / 局域网部署改 BLOG_HOST=0.0.0.0，并用防火墙控制访问。
 export const HOST = process.env.BLOG_HOST ?? "127.0.0.1";
 export const PORT = Number(process.env.BLOG_PORT ?? 7300);
+export const TRUST_PROXY = process.env.BLOG_TRUST_PROXY === "1";
 
 /** 前台静态托管端口（public-dist）；设为 0 可禁用 */
 export const FRONT_PORT = Number(process.env.BLOG_FRONT_PORT ?? 7301);
@@ -41,3 +42,4 @@ export function initDirs(): void {
 export const JWT_SECRET = () => ensureJwtSecret();
 export const COOKIE_NAME = "blog_session";
 export const SESSION_TTL_SEC = 60 * 60 * 24 * 7; // 7 天
+export const BACKUP_KEEP = Math.max(1, Number(process.env.BLOG_BACKUP_KEEP ?? 10) || 10);

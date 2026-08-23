@@ -40,11 +40,12 @@ const isHere = (href: string) =>
           <a
             href={item.href}
             class:list={["masthead__link", { "is-here": isHere(item.href) }]}
+            aria-current={isHere(item.href) ? "page" : undefined}
           >
             {item.label}
           </a>
         ))}
-        <a href="#search" class="masthead__link" data-search-open>搜索</a>
+        <button class="masthead__link" type="button" data-search-open>搜索</button>
       </nav>
       <div class="masthead__modes">
         <button class="masthead__skin" type="button" data-skin-toggle aria-label="切换界面风格" title="切换界面风格（手帐 / 溪石）">
@@ -165,13 +166,15 @@ const isHere = (href: string) =>
       background-color var(--dur-short) var(--ease-out),
       border-color var(--dur-short) var(--ease-out);
   }
+  button.masthead__link {
+    font: inherit;
+    cursor: pointer;
+  }
   .masthead__nav .masthead__link:nth-child(odd) { transform: rotate(-0.8deg); }
   .masthead__nav .masthead__link:nth-child(even) { transform: rotate(0.6deg); }
   .masthead__link:hover {
-    color: var(--color-ink-strong);
     text-decoration: none;
     transform: translateY(-2px) rotate(0deg);
-    border-color: var(--color-ink);
   }
   .masthead__link:focus-visible {
     transform: rotate(0deg);
@@ -179,7 +182,7 @@ const isHere = (href: string) =>
   .masthead__link.is-here {
     background: var(--color-accent);
     border-color: var(--color-accent);
-    color: var(--color-paper-2);
+    color: var(--color-accent-ink);
     transform: rotate(-1deg);
   }
   .masthead__link.is-here:hover {
@@ -202,15 +205,16 @@ const isHere = (href: string) =>
     cursor: pointer;
     white-space: nowrap;
     transform: rotate(2deg);
-    transition: color var(--dur-short) var(--ease-out),
-      border-color var(--dur-short) var(--ease-out),
-      transform var(--dur-short) var(--ease-out);
+    transition: transform var(--dur-short) var(--ease-out);
   }
   .masthead__skin:hover,
   .masthead__theme:hover {
-    color: var(--color-ink);
-    border-color: var(--color-ink);
     transform: rotate(0deg);
+  }
+  .masthead__nav button.masthead__link:active,
+  .masthead__skin:active,
+  .masthead__theme:active {
+    transform: translateY(1px);
   }
 
   @media (max-width: 64rem) {

@@ -170,7 +170,7 @@ onBeforeUnmount(() => document.removeEventListener("click", onDocClick));
   align-items: center;
   gap: var(--space-2xs);
   width: 100%;
-  min-height: 2.25rem;
+  min-height: 2.75rem;
   padding: var(--space-2xs) var(--space-sm);
   border: 1px solid var(--color-rule-strong);
   border-radius: var(--radius-sm);
@@ -217,7 +217,7 @@ onBeforeUnmount(() => document.removeEventListener("click", onDocClick));
   border: 1px solid var(--color-rule);
   border-radius: 10px;
   background: var(--color-paper-2);
-  box-shadow: 0 8px 28px -8px oklch(29% 0.024 55 / 0.28);
+  box-shadow: var(--shadow-popover);
 }
 .app-select__menu--up { top: auto; bottom: calc(100% + 4px); }
 

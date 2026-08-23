@@ -37,12 +37,12 @@
 
 **发布**
 - 一键流水线：预检 → 导出 → Astro 静态构建 → 部署适配器（local / 可扩展）
-- 前台手帐风格，深浅色切换，滚动显现等克制动效，全端响应式
+- 前台手帐 / 溪石双风格，深浅色切换，单次首屏落纸等克制动效，全端响应式
 - 写作统计：本月字数、连续写作天数、构建历史
 
 **附件与文件**
-- 图片 / PDF / Word(docx) / Excel(xlsx) / PPT / zip 等
-- 后台在线预览：图片、PDF、文本原生；docx / xlsx 浏览器端解析
+- 位图 / PDF / Word(docx) / Excel(xlsx) / PPT / zip 等（为避免脚本注入，不接受 SVG 媒体）
+- 后台在线预览：图片、PDF、文本原生；docx 安全文本提取，xlsx 浏览器端解析
 
 ## 快速开始
 
@@ -83,10 +83,10 @@ docker compose up -d --build
 ```
 
 - 前台：`http://<host>:4321`（发布后的静态站，容器内由独立端口托管，发布后刷新即更新）
-- 后台：`http://<host>:7300`
+- 后台：`http://127.0.0.1:7300`（默认只绑定宿主机；通过 VPN 或 HTTPS 反代访问）
 - 数据（SQLite + 附件）：挂载在 `./docker-data`，**备份 = 拷贝这个目录**
 - 发布产物：挂载在 `./public-dist`；自带的前台端口够日常使用，流量大时也可改用 Nginx / Caddy 直接托管该目录
-- 对外部署时只放行前台端口，后台端口用防火墙留在内网
+- 对外部署时只放行前台端口；如需远程后台，建议通过 VPN 或 HTTPS 反代，并显式调整 `docker-compose.yml` 的后台端口绑定
 - 首次启动自动初始化；可用环境变量预设账号（见 `docker-compose.yml`）：
 
 ```yaml
@@ -113,6 +113,7 @@ server {
 data/
 ├── blog.db        # SQLite：账号、文章、知识结构、版本、构建历史
 ├── media/         # 上传的附件（正文以 uploads/ 相对路径引用）
+├── backups/       # 发布前的一致性快照（默认保留最近 10 份）
 └── .jwt-secret    # 会话密钥
 ```
 
@@ -138,6 +139,11 @@ design.md       # 设计系统说明
 | `BLOG_PORT` | `7300` | 后台端口 |
 | `BLOG_DATA_DIR` | `packages/server/data` | 数据目录（SQLite + 附件） |
 | `BLOG_SITE_URL` | `http://localhost:4321` | 站点绝对地址（RSS / sitemap 用） |
+| `BLOG_BACKUP_KEEP` | `10` | 发布前数据库快照保留份数 |
+| `BLOG_HTTPS` | `0` | HTTPS 反代下设为 `1`，为会话 Cookie 开启 Secure |
+| `BLOG_TRUST_PROXY` | `0` | 仅在可信反代后设为 `1`，用于识别真实 IP/Host |
+
+安全默认：原始 Markdown HTML 不执行；后台附件访问需要登录；发布产物只包含公开文章、其知识结构以及实际引用的安全附件。
 
 ## 路线图
 

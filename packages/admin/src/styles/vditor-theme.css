@@ -22,15 +22,15 @@
   --callout-note-background-color: var(--color-accent-wash);
   --callout-tip-color: var(--color-success);
   --callout-tip-background-color: color-mix(in oklch, var(--color-success) 10%, transparent);
-  --callout-important-color: var(--color-accent-ink);
+  --callout-important-color: var(--color-accent-strong);
   --callout-important-background-color: var(--color-accent-wash);
   --callout-warning-color: var(--color-danger);
   --callout-warning-background-color: color-mix(in oklch, var(--color-danger) 8%, transparent);
   --callout-caution-color: var(--color-danger);
   --callout-caution-background-color: color-mix(in oklch, var(--color-danger) 8%, transparent);
-  --ir-heading-color: var(--color-accent-ink);
+  --ir-heading-color: var(--color-accent-strong);
   --ir-title-color: var(--color-neutral);
-  --ir-bi-color: var(--color-accent-ink);
+  --ir-bi-color: var(--color-accent-strong);
   --ir-link-color: var(--color-success);
   --ir-bracket-color: var(--color-rule-strong);
   --ir-paren-color: var(--color-rule-strong);
@@ -149,7 +149,7 @@
 }
 .vditor .hljs-number,
 .vditor .hljs-literal {
-  color: var(--color-accent-ink);
+  color: var(--color-accent-strong);
 }
 .vditor .hljs-title,
 .vditor .hljs-function {

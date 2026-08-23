@@ -50,7 +50,9 @@ let oy = 0;
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function cssVar(name: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#888";
+  const styles = getComputedStyle(document.documentElement);
+  const value = styles.getPropertyValue(name).trim();
+  return value || styles.getPropertyValue("--color-neutral").trim();
 }
 
 function tick(): void {

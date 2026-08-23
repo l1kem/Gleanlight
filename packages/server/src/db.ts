@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import fs from "node:fs";
-import { DB_PATH, initDirs } from "./config.js";
+import path from "node:path";
+import { BACKUP_KEEP, DATA_DIR, DB_PATH, initDirs } from "./config.js";
 
 initDirs();
 
@@ -128,8 +129,23 @@ export function setSetting(key: string, value: unknown): void {
   ).run(key, JSON.stringify(value));
 }
 
-export function backupDb(): string {
-  const backupPath = `${DB_PATH}.backup-${new Date().toISOString().replace(/[:.]/g, "-")}`;
-  fs.copyFileSync(DB_PATH, backupPath);
+export async function backupDb(): Promise<string> {
+  const backupDir = path.join(DATA_DIR, "backups");
+  fs.mkdirSync(backupDir, { recursive: true });
+  const backupPath = path.join(
+    backupDir,
+    `blog-${new Date().toISOString().replace(/[:.]/g, "-")}.db`,
+  );
+  // better-sqlite3 的在线备份会连同 WAL 中已提交的数据生成一致快照。
+  await db.backup(backupPath);
+
+  const backups = fs
+    .readdirSync(backupDir)
+    .filter((name) => /^blog-.*\.db$/.test(name))
+    .sort()
+    .reverse();
+  for (const stale of backups.slice(BACKUP_KEEP)) {
+    fs.rmSync(path.join(backupDir, stale), { force: true });
+  }
   return backupPath;
 }

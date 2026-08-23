@@ -12,7 +12,6 @@ const ALLOWED = new Set([
   "image/jpeg",
   "image/gif",
   "image/webp",
-  "image/svg+xml",
   "image/avif",
   "image/bmp",
   // 文档（web 版 Obsidian 的附件体系）
@@ -35,7 +34,7 @@ const ALLOWED = new Set([
 const SAFE_EXTS = new Set([
   ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
   ".zip", ".txt", ".csv", ".md", ".json", ".mp3", ".mp4", ".mov",
-  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".bmp",
+  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".bmp",
 ]);
 
 export async function mediaRoutes(app: FastifyInstance): Promise<void> {
@@ -57,6 +56,9 @@ export async function mediaRoutes(app: FastifyInstance): Promise<void> {
     const file = await request.file({ limits: { fileSize: 20 * 1024 * 1024 } });
     if (!file) return reply.code(400).send({ error: "未收到文件" });
     const ext = path.extname(file.filename).toLowerCase();
+    if (ext === ".svg" || file.mimetype === "image/svg+xml") {
+      return reply.code(415).send({ error: "为避免脚本型 SVG，请先转为 PNG、WebP 或 AVIF" });
+    }
     if (file.mimetype === "application/octet-stream" && !SAFE_EXTS.has(ext)) {
       return reply.code(415).send({ error: `不支持的文件类型：${ext || "未知"}` });
     }
@@ -153,7 +155,6 @@ function mimeExt(mime: string): string {
     "image/jpeg": ".jpg",
     "image/gif": ".gif",
     "image/webp": ".webp",
-    "image/svg+xml": ".svg",
     "image/avif": ".avif",
   };
   return map[mime] ?? "";

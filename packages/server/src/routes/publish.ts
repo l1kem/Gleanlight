@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import path from "node:path";
-import { db, getSetting, backupDb } from "../db.js";
+import { db, getSetting, setSetting, backupDb } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { exportContent } from "../builder/exporter.js";
 import { runSiteBuild } from "../builder/build.js";
@@ -63,6 +63,14 @@ export async function publishRoutes(app: FastifyInstance): Promise<void> {
  * 手动发布与定时发布共用；source 记入日志便于区分。
  */
 export function startPublish(source: "manual" | "scheduled"): number {
+  const running = db
+    .prepare("SELECT id FROM builds WHERE status = 'running' ORDER BY id DESC LIMIT 1")
+    .get() as { id: number } | undefined;
+  if (running) {
+    if (source === "scheduled") setSetting("publish_pending", true);
+    return running.id;
+  }
+
   const pub = getSetting<PublishSettings>("publish", { adapter: "local", localDir: "" });
   const adapter = adapters[pub.adapter] ?? adapters.local;
 
@@ -70,6 +78,7 @@ export function startPublish(source: "manual" | "scheduled"): number {
     .prepare("INSERT INTO builds(status, adapter) VALUES('running', ?)")
     .run(adapter.name);
   const buildId = Number(info.lastInsertRowid);
+  setSetting("publish_pending", false);
 
   const logLines: string[] = [];
   const log = (line: string) => {
@@ -83,10 +92,13 @@ export function startPublish(source: "manual" | "scheduled"): number {
     try {
       log(`[0/3] 发布前预检${source === "scheduled" ? "（定时触发）" : ""} …`);
       for (const line of formatPrecheck(runHealthChecks())) log(line);
-      backupDb(); // 每次发布前自动备份 SQLite
+      await backupDb(); // 每次发布前自动备份 SQLite（WAL 一致快照）
       log(`[1/3] 导出内容 …`);
-      const { postCount } = exportContent();
-      log(`      已导出 ${postCount} 篇已发布文章`);
+      const { postCount, mediaCount, skippedUnsafeMedia } = exportContent();
+      log(`      已导出 ${postCount} 篇文章、${mediaCount} 个公开附件`);
+      if (skippedUnsafeMedia > 0) {
+        log(`      ⚠ 跳过 ${skippedUnsafeMedia} 个 SVG 附件；请转为 PNG/WebP 后重新引用`);
+      }
       log(`[2/3] astro build（静态化前台）…`);
       await runSiteBuild(log);
       log(`[3/3] 部署（${adapter.name}）…`);
@@ -100,6 +112,12 @@ export function startPublish(source: "manual" | "scheduled"): number {
       db.prepare(
         "UPDATE builds SET status='failed', finished_at=datetime('now') WHERE id=?"
       ).run(buildId);
+    } finally {
+      // 构建期间到点的定时文章可能错过本次导出；结束后补跑一次，避免静态站漏发。
+      if (getSetting<boolean>("publish_pending", false)) {
+        setSetting("publish_pending", false);
+        setImmediate(() => startPublish("scheduled"));
+      }
     }
   })();
 
@@ -114,7 +132,7 @@ export function promoteScheduledPosts(): void {
   const due = db
     .prepare(
       `SELECT id, title FROM posts
-       WHERE scheduled_at IS NOT NULL AND scheduled_at <= datetime('now')`
+       WHERE status='draft' AND scheduled_at IS NOT NULL AND scheduled_at <= datetime('now')`
     )
     .all() as { id: number; title: string }[];
   if (due.length === 0) return;
@@ -130,10 +148,22 @@ export function promoteScheduledPosts(): void {
 
   const running = db.prepare("SELECT id FROM builds WHERE status = 'running'").get();
   if (running) {
-    // 已有构建在跑：跳过本次触发，下一轮扫描时若再有到点文章会重试；
-    // 本轮已发布的文章会随该次构建一并导出。
-    console.log("[scheduler] 已有构建进行中，合并入当前流水线");
+    setSetting("publish_pending", true);
+    console.log("[scheduler] 已有构建进行中，已排队在结束后补跑");
     return;
   }
   startPublish("scheduled");
+}
+
+/** 进程异常退出会遗留 running 记录；启动时收口并恢复待补跑任务。 */
+export function recoverInterruptedBuilds(): boolean {
+  const info = db
+    .prepare(
+      `UPDATE builds
+       SET status='failed', finished_at=datetime('now'),
+           log=log || '\n失败：服务进程在构建期间中断'
+       WHERE status='running'`,
+    )
+    .run();
+  return info.changes > 0 || getSetting<boolean>("publish_pending", false);
 }

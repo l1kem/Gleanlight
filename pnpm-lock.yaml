@@ -60,6 +60,9 @@ importers:
       '@types/markdown-it':
         specifier: ^14.1.2
         version: 14.2.0
+      tsx:
+        specifier: ^4.19.4
+        version: 4.23.12
       typescript:
         specifier: ^5.8.3
         version: 5.9.3

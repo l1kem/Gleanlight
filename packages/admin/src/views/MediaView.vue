@@ -89,7 +89,6 @@ interface ViewerState {
   item: MediaItem;
   kind: "image" | "pdf" | "text" | "docx" | "xlsx" | "other";
   text?: string;
-  html?: string;
   tables?: string[][][];
 }
 const viewer = ref<ViewerState | null>(null);
@@ -117,8 +116,9 @@ async function openViewer(m: MediaItem): Promise<void> {
         viewer.value.text = new TextDecoder().decode(buf);
       } else if (kind === "docx") {
         const mammoth = await import("mammoth");
-        const result = await mammoth.convertToHtml({ arrayBuffer: buf });
-        viewer.value.html = result.value;
+        // DOCX 属于外部输入；提取纯文本而不是把生成 HTML 交给 v-html。
+        const result = await mammoth.extractRawText({ arrayBuffer: buf });
+        viewer.value.text = result.value;
       } else {
         const XLSX = await import("xlsx");
         const wb = XLSX.read(buf, { type: "array" });
@@ -189,7 +189,7 @@ async function openViewer(m: MediaItem): Promise<void> {
 
     <!-- 文件查看器 -->
     <div v-if="viewer" class="viewer-layer" @click.self="viewer = null">
-      <div class="viewer-box">
+      <div class="viewer-box" role="dialog" aria-modal="true" :aria-label="`查看 ${viewer.item.filename}`">
         <div class="viewer-bar">
           <strong class="viewer-name">{{ viewer.item.filename }}</strong>
           <div class="viewer-ops">
@@ -206,8 +206,11 @@ async function openViewer(m: MediaItem): Promise<void> {
             :title="viewer.item.filename"
           ></iframe>
           <pre v-else-if="viewer.kind === 'text'" class="viewer-pre mono">{{ viewer.text }}</pre>
-          <!-- docx 渲染结果来自自家服务器的文件解析（mammoth），非任意 HTML 直传 -->
-          <div v-else-if="viewer.kind === 'docx' && viewer.html" class="viewer-doc" v-html="viewer.html" />
+          <div v-else-if="viewer.kind === 'docx' && viewer.text" class="viewer-doc">
+            <p v-for="(paragraph, i) in viewer.text.split(/\n{2,}/).filter(Boolean)" :key="i">
+              {{ paragraph }}
+            </p>
+          </div>
           <div v-else-if="viewer.kind === 'xlsx' && viewer.tables" class="viewer-sheet">
             <div v-for="(rows, i) in viewer.tables" :key="i" class="viewer-sheet__table">
               <p class="muted small">Sheet {{ i + 1 }}</p>
@@ -302,7 +305,7 @@ async function openViewer(m: MediaItem): Promise<void> {
   position: fixed;
   inset: 0;
   z-index: var(--z-modal);
-  background: oklch(20% 0.01 60 / 0.55);
+  background: var(--color-scrim);
   display: grid;
   place-items: center;
   padding: var(--space-lg);

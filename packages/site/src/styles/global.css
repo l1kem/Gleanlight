@@ -3,8 +3,9 @@
  * axes: light cream paper · kai-handwriting display/body · brick-red warm accent
  * studied: yes · DNA-source: image (user reference ×3) · design-system: design.md
  * 说明：色彩/字体在此覆盖共享 token；间距/层级/动效/布局 token 继续来自 @gleanlight/tokens。
- * 动效系统（design.md「Motion」章）：滚动显现 / 视图过渡 / 胶带摆动 / 邮戳盖印 /
- * 行缩进 / 进度条 / 文件树展开 —— 全部 transform+opacity，reduced-motion 全量降级。
+ * 动效系统（design.md「Motion」章）：首屏落纸 / 视图过渡 / 功能性交互；
+ * 每页不超过三种原语，全部 transform+opacity，reduced-motion 全量降级。
+ * Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4
  */
 @import "@gleanlight/tokens/tokens.css";
 
@@ -21,13 +22,15 @@
   --color-ink:        oklch(29% 0.024 55);
   --color-ink-strong: oklch(23% 0.028 52);
   --color-accent:     oklch(57% 0.135 33);
-  --color-accent-ink: oklch(48% 0.140 32);
+  --color-accent-strong: oklch(48% 0.140 32);
+  --color-accent-ink: oklch(98% 0.012 95);
   --color-accent-wash: oklch(93% 0.040 45);
   --color-focus:      oklch(57% 0.135 33);
   --color-danger:     oklch(52% 0.170 25);
   --color-success:    oklch(50% 0.120 150);
   --color-selection-bg: oklch(92% 0.050 50);
   --color-sticky:     oklch(94% 0.060 95);   /* 便利贴 */
+  --color-scrim:      oklch(20% 0.010 60 / 0.45);
 
   /* 和纸胶带（不透明 token；半透明感由 .tape 的 opacity 承担） */
   --tape-red:    oklch(85% 0.070 30);
@@ -65,13 +68,15 @@
   --color-ink:        oklch(90% 0.012 88);
   --color-ink-strong: oklch(95% 0.010 90);
   --color-accent:     oklch(70% 0.120 35);
-  --color-accent-ink: oklch(78% 0.100 35);
+  --color-accent-strong: oklch(78% 0.100 35);
+  --color-accent-ink: oklch(18% 0.012 70);
   --color-accent-wash: oklch(30% 0.050 40);
   --color-focus:      oklch(70% 0.120 35);
   --color-danger:     oklch(66% 0.160 25);
   --color-success:    oklch(68% 0.110 150);
   --color-selection-bg: oklch(30% 0.050 40);
   --color-sticky:     oklch(30% 0.050 95);
+  --color-scrim:      oklch(8% 0.010 60 / 0.68);
 
   --tape-red:    oklch(38% 0.070 30);
   --tape-green:  oklch(38% 0.060 140);
@@ -107,6 +112,7 @@ h1, h2, h3, h4 {
   letter-spacing: 0.02em;
   line-height: var(--leading-tight);
   overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 a {
@@ -120,6 +126,11 @@ a {
 a:hover {
   text-decoration-style: wavy;
   text-decoration-color: var(--color-accent);
+}
+button:disabled,
+[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 img { max-width: 100%; height: auto; }
@@ -161,8 +172,7 @@ img { max-width: 100%; height: auto; }
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-paper);
-  transition: transform var(--dur-short) var(--ease-out),
-    box-shadow var(--dur-short) var(--ease-out);
+  transition: transform var(--dur-short) var(--ease-out);
 }
 .tilt-l { transform: rotate(-0.5deg); }
 .tilt-r { transform: rotate(0.7deg); }
@@ -175,28 +185,11 @@ a.paper-card:focus-visible,
 .link-card:hover,
 .link-card:focus-visible {
   transform: rotate(0deg) translateY(-3px);
-  box-shadow: 0 6px 18px -6px color-mix(in oklch, var(--color-ink) 32%, transparent);
 }
-
-/* 卡片 hover 时胶带轻轻摆动（各位置各自的基准 transform） */
-@keyframes tape-jiggle-tc {
-  0%, 100% { transform: translateX(-50%) rotate(-3deg); }
-  50% { transform: translateX(-50%) rotate(2deg) translateY(-1px); }
+a.paper-card:active,
+.link-card:active {
+  transform: rotate(0deg) translateY(0);
 }
-@keyframes tape-jiggle-tl {
-  0%, 100% { transform: rotate(-38deg); }
-  50% { transform: rotate(-30deg) translateY(-1px); }
-}
-@keyframes tape-jiggle-tr {
-  0%, 100% { transform: rotate(36deg); }
-  50% { transform: rotate(28deg) translateY(-1px); }
-}
-a.paper-card:hover .tape--tc,
-.link-card:hover .tape--tc { animation: tape-jiggle-tc 700ms var(--ease-in-out); }
-a.paper-card:hover .tape--tl,
-.link-card:hover .tape--tl { animation: tape-jiggle-tl 700ms var(--ease-in-out); }
-a.paper-card:hover .tape--tr,
-.link-card:hover .tape--tr { animation: tape-jiggle-tr 700ms var(--ease-in-out); }
 
 /* 编号角标：仅用于真正有序的位置（首页横带 / 阅读路径 / 归档年份） */
 .badge-num {
@@ -207,7 +200,7 @@ a.paper-card:hover .tape--tr,
   height: 2.1em;
   padding-inline: 0.45em;
   background: var(--color-accent);
-  color: var(--color-paper-2);
+  color: var(--color-accent-ink);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: var(--text-sm);
@@ -244,58 +237,26 @@ a.paper-card:hover .tape--tr,
   --stamp-rot: -5deg;
   --stamp-opacity: 0.8;
 }
-@keyframes stamp-in {
-  0% { opacity: 0; transform: rotate(var(--stamp-rot)) scale(1.6); }
-  55% { opacity: 1; transform: rotate(var(--stamp-rot)) scale(0.94); }
-  100% { opacity: var(--stamp-opacity, 1); transform: rotate(var(--stamp-rot)) scale(1); }
-}
-.reveal.is-in .badge-num,
-.reveal.is-in .stamp,
-.stamp--onload {
-  animation: stamp-in 380ms var(--ease-out) backwards;
-}
-.reveal.is-in .badge-num { animation-delay: calc(var(--i, 0) * 70ms + 140ms); }
-.reveal.is-in .stamp { animation-delay: 260ms; }
-.stamp--onload { animation-delay: 480ms; }
-
 /* 通用小类（各页在用） */
 .muted { color: var(--color-muted); }
 .small { font-size: var(--text-sm); }
 .mono  { font-family: var(--font-mono); }
 
-/* ── 入场编排（IntersectionObserver 滚动显现；无 JS 时内容直接可见）──
- * .reveal 进场时上浮淡入，--i 错峰；.reveal-fade 仅淡入（供吸顶/树等不宜位移的元素）。
- * html.js 由 BaseLayout 首帧脚本添加。
- */
-.js .reveal {
-  opacity: 0;
-  transform: translateY(14px);
-  transition:
-    opacity var(--dur-long) var(--ease-out) calc(var(--i, 0) * 70ms),
-    transform var(--dur-long) var(--ease-out) calc(var(--i, 0) * 70ms);
-}
-.js .reveal.is-in {
+/* ── 入场编排：旧 reveal 类保持兼容并直接可见，仅首页扉页落纸一次。 */
+/* 内容默认直接可见；只保留首页扉页的一次落纸，避免整站滚动淡入。 */
+.reveal,
+.reveal-fade,
+.reveal-stagger {
   opacity: 1;
   transform: none;
 }
-.js .reveal-fade {
-  opacity: 0;
-  transition: opacity var(--dur-long) var(--ease-out);
-}
-.js .reveal-fade.is-in {
-  opacity: 1;
-}
-
-/* 容器进场后子项依次落纸（--i 由子项内联提供）。
- * 用只有 from 的 keyframes：动画结束后回到各自自然状态，
- * 不锁 transform —— 纸片的微倾与 hover 摆正照常工作。
- */
-.js .reveal-stagger.is-in > * {
-  animation: child-in var(--dur-long) var(--ease-out) backwards;
-  animation-delay: calc(var(--i, 0) * 70ms);
-}
-@keyframes child-in {
-  from { opacity: 0; transform: translateY(12px); }
+@media (prefers-reduced-motion: no-preference) {
+  .intro--entry .intro__card {
+    animation: page-arrive var(--dur-long) var(--ease-out) both;
+  }
+  @keyframes page-arrive {
+    from { opacity: 0; transform: translateY(10px) rotate(-0.35deg); }
+  }
 }
 
 /* ── 页面间视图过渡（ClientRouter；旧页上收、新页落纸）────────── */
@@ -501,7 +462,7 @@ a.paper-card:hover .tape--tr,
 .hljs-comment, .hljs-quote { color: var(--color-neutral); font-style: italic; }
 .hljs-keyword, .hljs-selector-tag, .hljs-name { color: var(--color-accent); }
 .hljs-string, .hljs-attr { color: var(--color-success); }
-.hljs-number, .hljs-literal { color: var(--color-accent-ink); }
+.hljs-number, .hljs-literal { color: var(--color-accent-strong); }
 .hljs-title, .hljs-function { color: var(--color-ink-strong); font-weight: 600; }
 
 /* ── 元信息行（文楷手写感）───────────────────────────────────── */
@@ -562,11 +523,9 @@ a.paper-card:hover .tape--tr,
   text-decoration: none;
   font-weight: 400;
   display: inline-block;
-  transition: transform var(--dur-short) var(--ease-out),
-    color var(--dur-short) var(--ease-out);
+  transition: transform var(--dur-short) var(--ease-out);
 }
 .rowlist .rowlist__title:hover {
-  color: var(--color-accent);
   transform: translateX(4px);
 }
 .rowlist .rowlist__meta {
@@ -586,13 +545,11 @@ a.paper-card:hover .tape--tr,
   border-radius: var(--radius-pill);
   padding: var(--space-3xs) var(--space-sm);
   text-decoration: none;
-  transition: color var(--dur-short) var(--ease-out),
-    transform var(--dur-short) var(--ease-out);
+  transition: color var(--dur-short) var(--ease-out);
 }
 .taglink:hover {
   color: var(--color-accent);
   text-decoration: none;
-  transform: rotate(-2deg);
 }
 
 /* 焦点 */
@@ -605,9 +562,17 @@ a.paper-card:hover .tape--tr,
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .js .reveal { transform: none; }
-  .reveal.is-in .badge-num,
-  .reveal.is-in .stamp,
-  .stamp--onload {
-    animation: none;
+  .intro--entry .intro__card { animation: none; }
+}
+
+@media (pointer: coarse) {
+  .masthead__link,
+  .masthead__skin,
+  .masthead__theme,
+  .taglink,
+  .rail__more {
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
   }
 }

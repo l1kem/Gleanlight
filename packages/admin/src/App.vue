@@ -199,8 +199,8 @@ watch(isPublic, (pub) => {
   width: 2.1rem;
   height: 2.1rem;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, oklch(62% 0.14 35), oklch(50% 0.13 30));
-  color: oklch(98% 0.01 90);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
   font-size: 1rem;
 }
 .side__brandtext {
@@ -280,8 +280,8 @@ watch(isPublic, (pub) => {
   width: 2.1rem;
   height: 2.1rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, oklch(58% 0.12 80), oklch(50% 0.13 35));
-  color: oklch(98% 0.01 90);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
   font-weight: 600;
   font-size: var(--text-sm);
 }
@@ -307,7 +307,7 @@ watch(isPublic, (pub) => {
   cursor: pointer;
   text-align: left;
 }
-.side__logout:hover { color: oklch(70% 0.13 25); text-decoration: underline; }
+.side__logout:hover { color: var(--color-danger); text-decoration: underline; }
 .side__ver {
   margin: var(--space-xs) 0 0;
   padding: 0 var(--space-sm);
@@ -364,8 +364,7 @@ watch(isPublic, (pub) => {
   transition: border-color var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
 }
 .topbar__search:hover {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-accent) 12%, transparent);
+  background: var(--color-paper-3);
 }
 .topbar__search svg {
   width: 1rem;

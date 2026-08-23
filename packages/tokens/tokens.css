@@ -1,7 +1,8 @@
 /* Hallmark · genre: editorial · macrostructure: Ecosystem Index · theme: Newsprint
  * nav: N6 报纸刊头 · footer: Ft6 书信式收尾 · enrichment: none (typography only)
  * axes: light paper · roman-serif display · warm accent
- * 前台(Astro)与后台(Vue)共用本文件 —— UI 风格统一的单一事实来源。
+ * design-system: design.md · shared foundation for site + admin
+ * Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4
  */
 
 :root {
@@ -16,12 +17,14 @@
   --color-ink:      oklch(23% 0.014 62);  /* 正文墨色 */
   --color-ink-strong: oklch(17% 0.016 60);/* 标题重墨 */
   --color-accent:   oklch(51% 0.16 32);   /* 朱红：链接/强调/焦点环 */
-  --color-accent-ink: oklch(43% 0.15 32); /* 朱红按下态（深一档）*/
+  --color-accent-strong: oklch(43% 0.15 32); /* 朱红按下态（深一档）*/
+  --color-accent-ink: oklch(98% 0.008 90); /* 朱红填充上的文字 */
   --color-accent-wash: oklch(93% 0.025 45); /* 朱红极浅晕染：<mark>、选中 */
   --color-focus:    oklch(51% 0.16 32);
   --color-danger:   oklch(50% 0.18 25);
   --color-success:  oklch(50% 0.12 150);
   --color-selection-bg: oklch(93% 0.025 45);
+  --color-scrim: oklch(20% 0.010 60 / 0.48);
 
   /* ── 字体 · 2+1 ──────────────────────────────────────────────── */
   /* display：中文衬线（标题、刊头）。webfont 按需子集加载，回退系统宋体 */
@@ -99,12 +102,14 @@
   --color-ink:      oklch(90% 0.006 85);
   --color-ink-strong: oklch(95% 0.005 85);
   --color-accent:   oklch(66% 0.145 32);
-  --color-accent-ink: oklch(74% 0.13 32);
+  --color-accent-strong: oklch(74% 0.13 32);
+  --color-accent-ink: oklch(18% 0.012 70);
   --color-accent-wash: oklch(26% 0.035 40);
   --color-focus:    oklch(66% 0.145 32);
   --color-danger:   oklch(64% 0.16 25);
   --color-success:  oklch(66% 0.11 150);
   --color-selection-bg: oklch(26% 0.035 40);
+  --color-scrim: oklch(7% 0.010 60 / 0.72);
   --shadow-whisper: 0 1px 2px oklch(0% 0 0 / 0.3);
   --shadow-hairline: 0 0 0 1px oklch(80% 0.01 80 / 0.1);
 }

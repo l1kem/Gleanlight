@@ -156,7 +156,7 @@ defineExpose({ show });
 <template>
   <Teleport to="body">
     <div v-if="open" class="palette-layer" @click.self="hide">
-      <div class="palette" role="dialog" aria-label="命令面板">
+      <div class="palette" role="dialog" aria-modal="true" aria-label="命令面板">
         <div class="palette__bar">
           <span class="palette__icon" aria-hidden="true">⌘</span>
           <input
@@ -169,11 +169,13 @@ defineExpose({ show });
           />
           <span class="palette__esc">esc 关闭</span>
         </div>
-        <ul v-if="items.length" class="palette__list">
+        <ul v-if="items.length" class="palette__list" role="listbox">
           <li
             v-for="(it, i) in items"
             :key="it.key"
             :class="{ 'is-active': i === active }"
+            role="option"
+            :aria-selected="i === active"
             @click="pick(it)"
             @mousemove="onListItemOver(i)"
           >
@@ -198,7 +200,7 @@ defineExpose({ show });
   position: fixed;
   inset: 0;
   z-index: var(--z-modal);
-  background: oklch(20% 0.01 60 / 0.45);
+  background: var(--color-scrim);
   display: flex;
   justify-content: center;
   align-items: flex-start;

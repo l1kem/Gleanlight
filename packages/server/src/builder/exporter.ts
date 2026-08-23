@@ -3,6 +3,7 @@ import path from "node:path";
 import { db, getSetting } from "../db.js";
 import { MEDIA_DIR, PKG_SITE } from "../config.js";
 import type { SiteSettings } from "../routes/settings.js";
+import { filterPublicStructure, selectPublicMedia } from "../lib/publication.js";
 
 /**
  * 导出器：把 SQLite 中已发布内容物化为 Astro 可消费的静态数据。
@@ -30,11 +31,13 @@ export interface ExportedPost {
   links: string[]; // 本文 [[引用]] 的 slug
 }
 
-export function exportContent(): { postCount: number } {
+export function exportContent(): {
+  postCount: number;
+  mediaCount: number;
+  skippedUnsafeMedia: number;
+} {
   const dataDir = path.join(PKG_SITE, "content", "data");
-  const siteUploadsDir = path.join(PKG_SITE, "public", "uploads");
   fs.mkdirSync(dataDir, { recursive: true });
-  fs.mkdirSync(siteUploadsDir, { recursive: true });
 
   // ── 文章（仅已发布且非私密：私密内容永不进入发布产物）──────────
   const posts = db
@@ -74,8 +77,20 @@ export function exportContent(): { postCount: number } {
   }));
 
   // ── 知识结构 ─────────────────────────────────────────────────
-  const domains = db.prepare("SELECT * FROM domains ORDER BY sort, id").all();
-  const topics = db.prepare("SELECT * FROM topics ORDER BY sort, id").all();
+  const allTopics = (
+    db.prepare("SELECT * FROM topics ORDER BY sort, id").all() as {
+      id: number;
+      domain_id: number;
+      [key: string]: unknown;
+    }[]
+  );
+  const allDomains = (
+    db.prepare("SELECT * FROM domains ORDER BY sort, id").all() as {
+      id: number;
+      [key: string]: unknown;
+    }[]
+  );
+  const { topics, domains } = filterPublicStructure(exported, allTopics, allDomains);
   const site = getSetting<Partial<SiteSettings>>("site", {});
 
   // ── 全部标签（供标签页枚举）──────────────────────────────────
@@ -90,14 +105,46 @@ export function exportContent(): { postCount: number } {
   writeJson(dataDir, "site.json", site);
   writeJson(dataDir, "tags.json", tags);
 
-  // ── 附件同步：md 里统一是相对路径 uploads/<file>；
-  //    导出两份（uploads/ 新约定 + media/ 兼容旧引用），量大后可改增量 ──
-  fs.cpSync(MEDIA_DIR, siteUploadsDir, { recursive: true });
-  fs.cpSync(MEDIA_DIR, path.join(PKG_SITE, "public", "media"), { recursive: true });
+  // ── 附件同步：只发布公开文章实际引用的媒体。每次从干净暂存目录替换，
+  //    避免已删除/转私密附件继续残留在后续静态产物中。──────────────
+  const media = db
+    .prepare("SELECT stored_name, mime FROM media ORDER BY id")
+    .all() as { stored_name: string; mime: string }[];
+  const { publishable, unsafe } = selectPublicMedia(exported, media);
 
-  return { postCount: exported.length };
+  const publicDir = path.join(PKG_SITE, "public");
+  fs.mkdirSync(publicDir, { recursive: true });
+  const uploadsStage = fs.mkdtempSync(path.join(publicDir, ".uploads-next-"));
+  const mediaStage = fs.mkdtempSync(path.join(publicDir, ".media-next-"));
+  let copiedMedia = 0;
+  try {
+    for (const item of publishable) {
+      const source = path.join(MEDIA_DIR, item.stored_name);
+      if (!fs.existsSync(source)) continue;
+      fs.copyFileSync(source, path.join(uploadsStage, item.stored_name));
+      fs.copyFileSync(source, path.join(mediaStage, item.stored_name));
+      copiedMedia += 1;
+    }
+    replaceGeneratedDir(uploadsStage, path.join(publicDir, "uploads"));
+    replaceGeneratedDir(mediaStage, path.join(publicDir, "media"));
+  } catch (error) {
+    fs.rmSync(uploadsStage, { recursive: true, force: true });
+    fs.rmSync(mediaStage, { recursive: true, force: true });
+    throw error;
+  }
+
+  return {
+    postCount: exported.length,
+    mediaCount: copiedMedia,
+    skippedUnsafeMedia: unsafe.length,
+  };
 }
 
 function writeJson(dir: string, name: string, data: unknown): void {
   fs.writeFileSync(path.join(dir, name), JSON.stringify(data, null, 1));
+}
+
+function replaceGeneratedDir(stage: string, target: string): void {
+  fs.rmSync(target, { recursive: true, force: true });
+  fs.renameSync(stage, target);
 }
