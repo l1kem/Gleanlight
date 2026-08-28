@@ -23,6 +23,13 @@ FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 RUN corepack enable
 
+# OG 分享图渲染中文字形（sharp/librsvg 走 fontconfig）。
+# 网络不通时跳过：构建继续，仅 OG 图字形退化为方框。
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends fonts-noto-cjk fontconfig \
+    && rm -rf /var/lib/apt/lists/* \
+    || echo "[docker] CJK 字体安装失败，OG 图字形将退化"
+
 # 全量拷贝（含依赖与构建产物）：发布动作在容器内执行 astro build，
 # 因此 site 包的依赖与源码需随运行时保留
 COPY --from=builder /app ./

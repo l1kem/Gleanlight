@@ -21,3 +21,6 @@ docker-data/
 .env.*
 *.log
 .DS_Store
+
+# 文楷自托管字体（构建时从 node_modules 拷贝）
+packages/site/public/fonts/
