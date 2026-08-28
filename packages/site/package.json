@@ -5,12 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
+    "predev": "node scripts/copy-fonts.mjs",
+    "prebuild": "node scripts/copy-fonts.mjs",
     "build": "astro build",
+    "postbuild": "pagefind --site dist",
     "preview": "astro preview"
   },
   "dependencies": {
     "@gleanlight/markdown": "workspace:*",
     "@gleanlight/tokens": "workspace:*",
     "astro": "^5.10.0"
+  },
+  "devDependencies": {
+    "lxgw-wenkai-webfont": "^1.7.0",
+    "pagefind": "^1.5.2",
+    "sharp": "^0.35.4"
   }
 }

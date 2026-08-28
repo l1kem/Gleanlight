@@ -1,0 +1,60 @@
+---
+/**
+ * 评论（giscus，GitHub Discussions 驱动）。
+ * 站长在后台「设置 → 评论与统计」里配置后，发布即生效；未配置时整块不渲染。
+ */
+import { getData } from "../lib/data";
+
+const { site } = await getData();
+const g = site.integrations?.giscus;
+const enabled = Boolean(g?.enable && g.repo && g.repoId && g.categoryId);
+---
+
+{enabled && g && (
+  <section class="comments">
+    <h2>留言</h2>
+    <div
+      class="giscus"
+      data-repo={g.repo}
+      data-repo-id={g.repoId}
+      data-category={g.category}
+      data-category-id={g.categoryId}
+    ></div>
+    <script is:inline>
+      (function () {
+        var box = document.querySelector(".giscus");
+        if (!box || box.dataset.loaded) return;
+        box.dataset.loaded = "1";
+        var s = document.createElement("script");
+        s.src = "https://giscus.app/client.js";
+        s.async = true;
+        s.crossOrigin = "anonymous";
+        s.setAttribute("data-repo", box.dataset.repo);
+        s.setAttribute("data-repo-id", box.dataset.repoId);
+        s.setAttribute("data-category", box.dataset.category);
+        s.setAttribute("data-category-id", box.dataset.categoryId);
+        s.setAttribute("data-mapping", "pathname");
+        s.setAttribute("data-strict", "0");
+        s.setAttribute("data-reactions-enabled", "1");
+        s.setAttribute("data-emit-metadata", "0");
+        s.setAttribute("data-input-position", "top");
+        s.setAttribute("data-theme", "preferred_color_scheme");
+        s.setAttribute("data-lang", "zh-CN");
+        box.appendChild(s);
+      })();
+    </script>
+  </section>
+)}
+
+<style>
+  .comments {
+    max-width: var(--measure);
+    margin: var(--space-xl) auto 0;
+    border-top: 2px dashed var(--color-rule-strong);
+    padding-top: var(--space-lg);
+  }
+  .comments h2 {
+    font-size: var(--text-lg);
+    margin: 0 0 var(--space-md);
+  }
+</style>

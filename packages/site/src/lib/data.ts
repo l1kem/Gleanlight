@@ -41,6 +41,11 @@ export interface Topic {
   sort: number;
 }
 
+export interface Integrations {
+  giscus?: { enable: boolean; repo: string; repoId: string; category: string; categoryId: string };
+  umami?: { src: string; websiteId: string };
+}
+
 export interface SiteInfo {
   title: string;
   description: string;
@@ -50,6 +55,7 @@ export interface SiteInfo {
   footerNote: string;
   social: { label: string; url: string }[];
   skin: string;
+  integrations?: Integrations;
 }
 
 export interface TagStat {
@@ -95,6 +101,7 @@ export async function getData(): Promise<{
     footerNote: site.footerNote ?? "",
     social: site.social ?? [],
     skin: site.skin === "moss" ? "moss" : "journal",
+    integrations: site.integrations,
   };
   cache = { posts, domains: structure.domains, topics: structure.topics, site: siteInfo, tags };
   return cache;

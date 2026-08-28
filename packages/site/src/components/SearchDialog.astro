@@ -78,6 +78,7 @@
             encodeURIComponent(p.slug) +
             '" data-i="' + i + '">' +
             '<span class="search-hit__title">' + esc(p.title) + "</span>" +
+            (p.excerpt ? '<span class="search-hit__excerpt">' + p.excerpt + "</span>" : "") +
             '<span class="search-hit__meta">' + esc(p.topic || "") + " · " + esc(p.date) + "</span>" +
             "</a></li>"
           );
@@ -88,17 +89,56 @@
         : "没有匹配的文章";
     }
 
-    function search(q) {
+    // ── pagefind 全文索引（构建后生成 /pagefind/；加载失败回退元数据检索）
+    var pagefind = null;
+    async function loadPagefind() {
+      if (pagefind !== null) return pagefind;
+      try {
+        // 变量形式的动态导入：Vite 不解析，运行时直接从构建产物加载
+        var pfUrl = "/pagefind/pagefind.js";
+        var mod = await import(/* @vite-ignore */ pfUrl);
+        await mod.options({ excerptLength: 16 });
+        pagefind = mod;
+      } catch {
+        pagefind = false;
+      }
+      return pagefind;
+    }
+
+    async function pagefindSearch(kw) {
+      var pf = await loadPagefind();
+      if (!pf) return null;
+      try {
+        var res = await pf.search(kw);
+        var hits = await Promise.all(res.results.slice(0, 30).map(function (r) { return r.data(); }));
+        return hits.map(function (h) {
+          var slug = (h.url || "").replace(/^\/posts\//, "").replace(/\/$/, "");
+          return {
+            slug: slug,
+            title: (h.meta && h.meta.title) || h.url,
+            topic: "",
+            date: "",
+            excerpt: h.excerpt ? h.excerpt.replace(/<mark>/g, "<mark>").slice(0, 160) : ""
+          };
+        });
+      } catch {
+        return null;
+      }
+    }
+
+    async function search(q) {
       var kw = q.trim().toLowerCase();
       if (!kw) {
         render(index);
         return;
       }
-      render(
-        index.filter(function (p) {
+      var hits = await pagefindSearch(kw);
+      if (hits === null) {
+        hits = index.filter(function (p) {
           return [p.title, p.summary, p.tags.join(" "), p.topic].join(" ").toLowerCase().includes(kw);
-        })
-      );
+        });
+      }
+      render(hits);
     }
 
     async function open(trigger) {
@@ -294,6 +334,21 @@
     font-size: var(--text-xs);
     color: var(--color-neutral);
     font-variant-numeric: tabular-nums;
+  }
+  .search-hit__excerpt {
+    font-size: var(--text-xs);
+    color: var(--color-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+  }
+  .search-hit__excerpt :global(mark),
+  .search-hit__excerpt mark {
+    color: var(--color-accent);
+    background: none;
+    font-weight: 700;
   }
   .search-foot {
     margin: 0;

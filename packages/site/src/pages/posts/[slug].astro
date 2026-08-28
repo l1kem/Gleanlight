@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import KbTree from "../../components/KbTree.astro";
+import Comments from "../../components/Comments.astro";
 import { renderMarkdown, extractToc } from "@gleanlight/markdown";
 import { getData, postDate, neighbors, backlinks } from "../../lib/data";
 
@@ -26,6 +27,17 @@ const linked = post.links
   .map((s) => posts.find((p) => p.slug === s))
   .filter(Boolean);
 const linkedBy = backlinks(posts, post.slug);
+
+// 相关阅读：同标签优先，排除自己与已引用/引用本文的（关联区已展示）
+const related = posts
+  .filter(
+    (p) =>
+      p.id !== post.id &&
+      !post.links.includes(p.slug) &&
+      !p.links.includes(post.slug) &&
+      p.tags.some((t) => post.tags.includes(t))
+  )
+  .slice(0, 3);
 ---
 
 <BaseLayout
@@ -35,6 +47,9 @@ const linkedBy = backlinks(posts, post.slug);
   publishedAt={post.publishedAt}
   updatedAt={post.updatedAt}
   tags={post.tags}
+  katex={html.includes("class=\"katex\"")}
+  mermaid={html.includes("class=\"mermaid\"")}
+  ogSlug={post.slug}
 >
   <div class:list={[{ "kb-layout": hasTopic }]}>
     {hasTopic && <KbTree currentTopicSlug={post.topicSlug!} currentPostSlug={post.slug} />}
@@ -116,6 +131,22 @@ const linkedBy = backlinks(posts, post.slug);
           )}
         </nav>
       )}
+
+      {related.length > 0 && (
+        <section class="post__related">
+          <h2>相关阅读</h2>
+          <ul>
+            {related.map((p) => (
+              <li>
+                <a href={`/posts/${p.slug}`}>{p.title}</a>
+                <span class="muted small">{p.tags.slice(0, 2).map((t) => `#${t}`).join(" ")}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <Comments />
     </footer>
     </article>
   </div>
