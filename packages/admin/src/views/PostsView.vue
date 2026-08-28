@@ -38,6 +38,65 @@ const topicOptions = computed(() => [
   })),
 ]);
 
+// ── 批量操作 ────────────────────────────────────────────────
+const selected = ref<Set<number>>(new Set());
+const batchBusy = ref(false);
+const allSelected = computed(
+  () => list.items.length > 0 && list.items.every((p) => selected.value.has(p.id))
+);
+
+function toggleAll(): void {
+  selected.value = allSelected.value
+    ? new Set()
+    : new Set(list.items.map((p) => p.id));
+}
+function toggleOne(id: number): void {
+  const next = new Set(selected.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  selected.value = next;
+}
+const moveOptions = computed(() => [
+  { value: "", label: "移动到主题…" },
+  { value: null as unknown as string, label: "（不属于任何主题）" },
+  ...kb.value.topics.map((t) => ({
+    value: t.id as unknown as string,
+    label: t.name,
+    group: kb.value.domains.find((d) => d.id === t.domain_id)?.name ?? "未分组",
+  })),
+]);
+const moveTarget = ref<string>("");
+function onMove(): void {
+  if (moveTarget.value === "") return;
+  const v = moveTarget.value === "__none__" ? null : Number(moveTarget.value);
+  void batch("move", v);
+  moveTarget.value = "";
+}
+
+async function batch(action: "publish" | "draft" | "delete" | "move", topicId?: number | null): Promise<void> {
+  const ids = [...selected.value];
+  if (!ids.length || batchBusy.value) return;
+  if (action === "delete" && !window.confirm(`删除选中的 ${ids.length} 篇文章？不可恢复。`)) return;
+  batchBusy.value = true;
+  try {
+    const { affected } = await api.post<{ affected: number }>("/posts/batch", {
+      action,
+      ids,
+      topic_id: topicId,
+    });
+    toast(
+      `已${{ publish: "发布", draft: "转草稿", delete: "删除", move: "移动" }[action]} ${affected} 篇`,
+      "success"
+    );
+    selected.value = new Set();
+    await load();
+  } catch (err) {
+    toastError(err);
+  } finally {
+    batchBusy.value = false;
+  }
+}
+
 async function load(): Promise<void> {
   loading.value = true;
   try {
@@ -91,10 +150,22 @@ async function remove(p: PostListItem): Promise<void> {
 
     <p v-if="list.total > list.items.length" class="muted small">当前筛选共 {{ list.total }} 篇，显示最近 {{ list.items.length }} 篇（可再缩小范围）</p>
 
+    <div v-if="selected.size" class="batchbar panel">
+      <span class="small">已选 <strong>{{ selected.size }}</strong> 篇</span>
+      <div class="batchbar__ops">
+        <button class="btn btn-sm" type="button" :data-loading="batchBusy" @click="batch('publish')">发布</button>
+        <button class="btn btn-sm" type="button" :data-loading="batchBusy" @click="batch('draft')">转草稿</button>
+        <AppSelect v-model="moveTarget" :options="moveOptions" inline @change="onMove" />
+        <button class="btn btn-sm btn-danger" type="button" @click="batch('delete')">删除</button>
+        <button class="btn btn-sm" type="button" @click="selected = new Set()">取消</button>
+      </div>
+    </div>
+
     <div class="panel">
       <table class="table" v-if="list.items.length">
         <thead>
           <tr>
+            <th class="col-check"><input type="checkbox" :checked="allSelected" @change="toggleAll" aria-label="全选" /></th>
             <th>标题</th>
             <th>状态</th>
             <th>归属</th>
@@ -104,6 +175,9 @@ async function remove(p: PostListItem): Promise<void> {
         </thead>
         <tbody>
           <tr v-for="p in list.items" :key="p.id">
+            <td class="col-check">
+              <input type="checkbox" :checked="selected.has(p.id)" @change="toggleOne(p.id)" :aria-label="`选择 ${p.title}`" />
+            </td>
             <td>
               <router-link :to="`/posts/${p.id}`">{{ p.title }}</router-link>
               <div class="muted small mono">{{ p.slug }}</div>
@@ -132,5 +206,24 @@ async function remove(p: PostListItem): Promise<void> {
 <style scoped>
 .input--inline {
   width: 12rem;
+}
+.batchbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  border-left: 3px solid var(--color-accent);
+}
+.batchbar__ops {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  flex-wrap: wrap;
+}
+.col-check {
+  width: 2.2rem;
 }
 </style>

@@ -51,6 +51,7 @@ const actions: Item[] = [
   { key: "a-kb", group: "动作", label: "知识库管理", to: "/kb" },
   { key: "a-media", group: "动作", label: "媒体库", to: "/media" },
   { key: "a-settings", group: "动作", label: "设置", to: "/settings" },
+  { key: "a-styleguide", group: "动作", label: "样式字典（设计系统）", to: "/styleguide" },
 ];
 
 const items = computed<Item[]>(() => {

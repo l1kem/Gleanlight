@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { api } from "../api";
 import { toast, toastError } from "../toast";
 
@@ -11,12 +11,56 @@ interface MediaItem {
   size: number;
   created_at: string;
   refs: { id: number; title: string }[];
+  thumb: string | null;
 }
 
 const items = ref<MediaItem[]>([]);
 const unusedCount = ref(0);
 const uploading = ref(false);
 const dragOver = ref(false);
+const q = ref("");
+
+// 服务端已有 /media?q= 查询；usage 视图本地过滤即可（≤500 条）
+const filtered = computed(() => {
+  const kw = q.value.trim().toLowerCase();
+  if (!kw) return items.value;
+  return items.value.filter((m) => m.filename.toLowerCase().includes(kw));
+});
+
+// ── 批量选择与删除 ──────────────────────────────────────────
+const selected = ref<Set<number>>(new Set());
+const batchBusy = ref(false);
+const allSelected = computed(
+  () => filtered.value.length > 0 && filtered.value.every((m) => selected.value.has(m.id))
+);
+function toggleAll(): void {
+  selected.value = allSelected.value ? new Set() : new Set(filtered.value.map((m) => m.id));
+}
+function toggleOne(id: number): void {
+  const next = new Set(selected.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  selected.value = next;
+}
+async function batchDelete(): Promise<void> {
+  const ids = [...selected.value];
+  if (!ids.length || batchBusy.value) return;
+  if (!window.confirm(`删除选中的 ${ids.length} 个文件？仍被引用的会自动跳过。`)) return;
+  batchBusy.value = true;
+  try {
+    const { deleted, skipped } = await api.post<{ deleted: number; skipped: number }>(
+      "/media/batch-delete",
+      { ids }
+    );
+    toast(`已删除 ${deleted} 个${skipped ? `，${skipped} 个因仍被引用而跳过` : ""}`, "success");
+    selected.value = new Set();
+    void load();
+  } catch (err) {
+    toastError(err);
+  } finally {
+    batchBusy.value = false;
+  }
+}
 
 async function load(): Promise<void> {
   const data = await api.get<{ items: MediaItem[]; unusedCount: number }>("/media/usage");
@@ -141,6 +185,13 @@ async function openViewer(m: MediaItem): Promise<void> {
     <header class="page-head">
       <h1>媒体库</h1>
       <div class="actions">
+        <input
+          v-model="q"
+          class="input input--inline"
+          type="search"
+          placeholder="搜索文件名…"
+          aria-label="搜索文件"
+        />
         <button
           v-if="unusedCount > 0"
           class="btn btn-danger"
@@ -157,6 +208,14 @@ async function openViewer(m: MediaItem): Promise<void> {
     </header>
     <p class="muted small">支持拖拽或直接粘贴；图片外的附件（pdf/docx/xlsx/pptx…）也可上传，点击缩略图查看。</p>
 
+    <div v-if="selected.size" class="batchbar panel">
+      <span class="small">已选 <strong>{{ selected.size }}</strong> 个</span>
+      <div class="batchbar__ops">
+        <button class="btn btn-sm btn-danger" type="button" :data-loading="batchBusy" @click="batchDelete">删除选中</button>
+        <button class="btn btn-sm" type="button" @click="selected = new Set()">取消</button>
+      </div>
+    </div>
+
     <div
       class="drop"
       :class="{ 'is-over': dragOver }"
@@ -164,10 +223,24 @@ async function openViewer(m: MediaItem): Promise<void> {
       @dragleave="dragOver = false"
       @drop.prevent="onDrop"
     >
-      <div v-if="items.length" class="grid">
-        <figure v-for="m in items" :key="m.id" class="shot">
+      <div v-if="filtered.length" class="grid">
+        <figure v-for="m in filtered" :key="m.id" class="shot" :class="{ 'is-selected': selected.has(m.id) }">
+          <label class="shot__check">
+            <input
+              type="checkbox"
+              :checked="selected.has(m.id)"
+              :aria-label="`选择 ${m.filename}`"
+              @change="toggleOne(m.id)"
+            />
+          </label>
           <button class="shot__view" type="button" :title="kindOf(m) === 'other' ? '下载' : '查看'" @click="openViewer(m)">
-            <img v-if="m.mime.startsWith('image/')" :src="`/uploads/${m.stored_name}`" :alt="m.filename" loading="lazy" />
+            <img
+              v-if="m.mime.startsWith('image/')"
+              :src="m.thumb ?? `/uploads/${m.stored_name}`"
+              :alt="m.filename"
+              loading="lazy"
+              decoding="async"
+            />
             <span v-else class="shot__fileicon mono">.{{ m.stored_name.split(".").pop() }}</span>
           </button>
           <span v-if="m.refs.length === 0" class="shot__unused" title="未被任何文章引用">未引用</span>
@@ -178,12 +251,13 @@ async function openViewer(m: MediaItem): Promise<void> {
             <span class="shot__name" :title="m.filename">{{ m.filename }}</span>
             <span class="muted small">{{ fmtSize(m.size) }}</span>
             <span class="shot__ops">
-              <button class="btn btn-sm" type="button" @click="copyUrl(m)">复制链接</button>
+              <button class="btn btn-sm" type="button" @click="copyUrl(m)">复制引用</button>
               <button class="btn btn-sm btn-danger" type="button" @click="remove(m)">删</button>
             </span>
           </figcaption>
         </figure>
       </div>
+      <p v-else-if="items.length" class="muted drop__empty">没有匹配「{{ q }}」的文件</p>
       <p v-else class="muted drop__empty">把图片拖到这里，或 Ctrl/⌘+V 粘贴截图</p>
     </div>
 
@@ -259,6 +333,43 @@ async function openViewer(m: MediaItem): Promise<void> {
   margin: 0;
   min-width: 0;
   position: relative;
+}
+.shot.is-selected {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.shot__check {
+  position: absolute;
+  top: var(--space-2xs);
+  left: var(--space-2xs);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: color-mix(in oklch, var(--color-paper) 88%, transparent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.batchbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  border-left: 3px solid var(--color-accent);
+}
+.batchbar__ops {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  flex-wrap: wrap;
+}
+.input--inline {
+  width: 12rem;
 }
 .shot__view {
   display: block;

@@ -14,6 +14,7 @@ export const router = createRouter({
     { path: "/media", component: () => import("./views/MediaView.vue") },
     { path: "/publish", component: () => import("./views/PublishView.vue") },
     { path: "/settings", component: () => import("./views/SettingsView.vue") },
+    { path: "/styleguide", component: () => import("./views/StyleguideView.vue") },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
 });

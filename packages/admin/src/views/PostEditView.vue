@@ -5,6 +5,7 @@ import { api } from "../api";
 import { toast, toastError } from "../toast";
 import Editor from "../components/Editor.vue";
 import AppSelect from "../components/AppSelect.vue";
+import { diffLines, type DiffLine } from "../utils/diff";
 
 interface PostDetail {
   id: number;
@@ -76,6 +77,8 @@ const previewOpen = ref(false);
 // 版本历史
 const revisions = ref<RevisionItem[]>([]);
 const revView = ref<RevisionItem & { content_md: string } | null>(null);
+const revDiff = ref<DiffLine[]>([]);
+const revShowDiff = ref(true);
 
 function markDirty(): void {
   dirty.value = true;
@@ -198,9 +201,13 @@ async function loadRevisions(): Promise<void> {
 }
 
 async function viewRevision(r: RevisionItem): Promise<void> {
-  revView.value = await api.get<RevisionItem & { content_md: string }>(
+  const rev = await api.get<RevisionItem & { content_md: string }>(
     `/posts/${form.id}/revisions/${r.id}`,
   );
+  revView.value = rev;
+  // 与当前编辑器内容做行级 diff（回滚前先看清改了什么）
+  revDiff.value = diffLines(form.content_md, rev.content_md);
+  revShowDiff.value = true;
 }
 
 async function restoreRevision(r: RevisionItem): Promise<void> {
@@ -545,11 +552,24 @@ const topicSelectOptions = computed(() =>
         <div class="preview-bar">
           <strong>版本快照 · {{ revView.created_at.slice(0, 16) }} · {{ revView.title }}</strong>
           <div class="preview-bar__ops">
+            <button class="btn btn-sm" type="button" :class="{ 'is-on': revShowDiff }" @click="revShowDiff = !revShowDiff">
+              {{ revShowDiff ? "对比当前" : "看全文" }}
+            </button>
             <button class="btn btn-sm" type="button" @click="restoreRevision(revView); revView = null">回滚到此版本</button>
             <button class="btn btn-sm" type="button" @click="revView = null">关闭</button>
           </div>
         </div>
-        <pre class="rev-body mono">{{ revView.content_md }}</pre>
+        <pre v-if="!revShowDiff" class="rev-body mono">{{ revView.content_md }}</pre>
+        <div v-else class="rev-body rev-diff mono">
+          <p v-if="!revDiff.some((l) => l.type !== 'same')" class="muted small diff-hint">与当前内容没有差异。</p>
+          <div
+            v-for="(l, i) in revDiff"
+            v-show="l.type !== 'same'"
+            :key="i"
+            class="diff-line"
+            :class="`diff-line--${l.type}`"
+          >{{ l.type === "add" ? "+" : "-" }} {{ l.text }}</div>
+        </div>
       </div>
     </div>
   </div>
@@ -711,6 +731,26 @@ const topicSelectOptions = computed(() =>
   font-size: var(--text-sm);
   line-height: 1.8;
   color: var(--color-ink);
+}
+.rev-diff {
+  white-space: pre-wrap;
+}
+.diff-hint {
+  padding: var(--space-sm) 0;
+}
+.diff-line {
+  padding: 0 var(--space-sm);
+  border-radius: 4px;
+}
+.diff-line--add {
+  background: color-mix(in oklch, var(--color-success) 14%, transparent);
+  color: var(--color-ink-strong);
+}
+.diff-line--del {
+  background: color-mix(in oklch, var(--color-danger) 12%, transparent);
+  color: var(--color-ink-strong);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklch, var(--color-danger) 55%, transparent);
 }
 
 .ai-panel {

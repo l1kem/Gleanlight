@@ -22,11 +22,20 @@ interface Stats {
   streak: number;
   lastPublishAt: string | null;
 }
+interface Overview {
+  published: number;
+  drafts: number;
+  scheduled: number;
+  topics: number;
+  domains: number;
+  media: number;
+  privatePosts: number;
+}
 
 const posts = ref<PostListItem[]>([]);
 const recentBuilds = ref<BuildItem[]>([]);
 const stats = ref<Stats | null>(null);
-const counts = ref({ published: 0, drafts: 0, topics: 0, domains: 0 });
+const counts = ref<Overview | null>(null);
 const loading = ref(true);
 
 function fmtWords(n: number): string {
@@ -36,22 +45,16 @@ function fmtWords(n: number): string {
 
 onMounted(async () => {
   try {
-    const [p, b, kb, s, all] = await Promise.all([
+    const [p, b, s, overview] = await Promise.all([
       api.get<{ items: PostListItem[] }>("/posts?pageSize=5"),
       api.get<{ items: BuildItem[] }>("/builds"),
-      api.get<{ domains: unknown[]; topics: unknown[] }>("/kb/tree"),
       api.get<Stats>("/stats"),
-      api.get<{ items: PostListItem[] }>("/posts?pageSize=50"),
+      api.get<Overview>("/stats/overview"),
     ]);
     posts.value = p.items;
     recentBuilds.value = b.items.slice(0, 3);
     stats.value = s;
-    counts.value = {
-      published: all.items.filter((x) => x.status === "published").length,
-      drafts: all.items.filter((x) => x.status === "draft").length,
-      topics: kb.topics.length,
-      domains: kb.domains.length,
-    };
+    counts.value = overview;
   } finally {
     loading.value = false;
   }
@@ -68,14 +71,18 @@ onMounted(async () => {
       </div>
     </header>
 
-    <div class="stat-row">
+    <div class="stat-row" :aria-busy="loading">
       <div class="panel stat">
-        <span class="stat__num">{{ counts.published }}</span>
+        <span class="stat__num">{{ counts?.published ?? "—" }}</span>
         <span class="stat__label">已发布</span>
       </div>
       <div class="panel stat">
-        <span class="stat__num">{{ counts.drafts }}</span>
+        <span class="stat__num">{{ counts?.drafts ?? "—" }}</span>
         <span class="stat__label">草稿箱</span>
+      </div>
+      <div class="panel stat" v-if="counts?.scheduled">
+        <span class="stat__num">{{ counts.scheduled }}</span>
+        <span class="stat__label">待定时发布</span>
       </div>
       <div class="panel stat">
         <span class="stat__num">{{ stats ? fmtWords(stats.wordsThisMonth) : "—" }}</span>
@@ -83,10 +90,10 @@ onMounted(async () => {
       </div>
       <div class="panel stat stat--accent">
         <span class="stat__num">{{ stats ? stats.streak : "—" }}</span>
-        <span class="stat__label">连续写作 {{ stats?.streak === 1 ? "天" : "天" }} 🔥</span>
+        <span class="stat__label">连续写作天数</span>
       </div>
       <div class="panel stat">
-        <span class="stat__num">{{ counts.topics || "—" }}</span>
+        <span class="stat__num">{{ counts?.topics ?? "—" }}</span>
         <span class="stat__label">知识主题</span>
       </div>
     </div>

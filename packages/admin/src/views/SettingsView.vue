@@ -16,7 +16,16 @@ interface SettingsPayload {
     skin?: string;
   };
   ai: { baseUrl: string; model: string; apiKey: string; hasKey: boolean };
-  publish: { adapter: string; localDir: string };
+  publish: {
+    adapter: "local" | "rsync" | "cloudflare";
+    localDir: string;
+    rsyncTarget: string;
+    cfProject: string;
+  };
+  integrations: {
+    giscus: { enable: boolean; repo: string; repoId: string; category: string; categoryId: string };
+    umami: { src: string; websiteId: string };
+  };
 }
 
 const site = reactive<SettingsPayload["site"]>({
@@ -30,19 +39,106 @@ const site = reactive<SettingsPayload["site"]>({
   skin: "journal",
 });
 const ai = reactive<SettingsPayload["ai"]>({ baseUrl: "", model: "", apiKey: "", hasKey: false });
-const publish = reactive<SettingsPayload["publish"]>({ adapter: "local", localDir: "" });
+const publish = reactive<SettingsPayload["publish"]>({
+  adapter: "local",
+  localDir: "",
+  rsyncTarget: "",
+  cfProject: "",
+});
+const integrations = reactive<SettingsPayload["integrations"]>({
+  giscus: { enable: false, repo: "", repoId: "", category: "", categoryId: "" },
+  umami: { src: "", websiteId: "" },
+});
 const pwd = reactive({ oldPassword: "", newPassword: "" });
 const savingSite = ref(false);
 const savingAi = ref(false);
 const testing = ref(false);
 const savingPwd = ref(false);
+const savingPublish = ref(false);
+const savingIntegrations = ref(false);
+
+const adapterOptions = [
+  { value: "local", label: "本地目录（public-dist，配合内置前台端口）" },
+  { value: "rsync", label: "rsync 同步到自有服务器（需 SSH 免密）" },
+  { value: "cloudflare", label: "Cloudflare Pages（需 CLOUDFLARE_API_TOKEN 环境变量）" },
+];
 
 onMounted(async () => {
   const s = await api.get<SettingsPayload>("/settings");
   Object.assign(site, s.site);
   Object.assign(ai, s.ai, { apiKey: "" });
   Object.assign(publish, s.publish);
+  Object.assign(integrations, s.integrations);
+  void loadBackups();
 });
+
+// ── 发布与备份 ───────────────────────────────────────────────
+async function savePublish(): Promise<void> {
+  savingPublish.value = true;
+  try {
+    await api.put("/settings", { publish });
+    toast("发布设置已保存", "success");
+  } catch (err) {
+    toastError(err);
+  } finally {
+    savingPublish.value = false;
+  }
+}
+
+interface BackupItem {
+  name: string;
+  kind: "db" | "archive";
+  size: number;
+  createdAt: string;
+}
+const backups = ref<BackupItem[]>([]);
+const backingUp = ref(false);
+const BACKUP_KEEP = 10;
+async function loadBackups(): Promise<void> {
+  try {
+    backups.value = (await api.get<{ items: BackupItem[] }>("/system/backups")).items;
+  } catch {
+    backups.value = [];
+  }
+}
+async function createBackup(): Promise<void> {
+  backingUp.value = true;
+  try {
+    await api.post("/system/backups");
+    toast("备份已生成（含数据库与附件）", "success");
+    await loadBackups();
+  } catch (err) {
+    toastError(err);
+  } finally {
+    backingUp.value = false;
+  }
+}
+async function deleteBackup(name: string): Promise<void> {
+  if (!window.confirm(`删除备份「${name}」？`)) return;
+  try {
+    await api.del(`/system/backups/${encodeURIComponent(name)}`);
+    await loadBackups();
+  } catch (err) {
+    toastError(err);
+  }
+}
+function fmtBytes(n: number): string {
+  if (n > 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.round(n / 1024)} KB`;
+}
+
+// ── 评论与统计 ───────────────────────────────────────────────
+async function saveIntegrations(): Promise<void> {
+  savingIntegrations.value = true;
+  try {
+    await api.put("/settings", { integrations });
+    toast("已保存，下次发布后前台生效", "success");
+  } catch (err) {
+    toastError(err);
+  } finally {
+    savingIntegrations.value = false;
+  }
+}
 
 async function saveSite(): Promise<void> {
   savingSite.value = true;
@@ -250,6 +346,100 @@ async function checkUpdate(): Promise<void> {
         <span class="mono">docker compose up -d --build</span>，数据在 <span class="mono">./docker-data</span> 不受影响。
       </p>
     </section>
+
+    <section class="panel">
+      <h2>发布与部署</h2>
+      <div class="field">
+        <label for="pub-adapter">部署目标</label>
+        <AppSelect id="pub-adapter" v-model="publish.adapter" :options="adapterOptions" />
+        <span class="hint">发布流程不变：导出 → Astro 构建 → 按此适配器投递产物</span>
+      </div>
+      <div v-if="publish.adapter === 'rsync'" class="field">
+        <label for="pub-rsync">rsync 目标地址</label>
+        <input id="pub-rsync" v-model="publish.rsyncTarget" class="input mono" type="text" placeholder="user@host:/srv/blog" />
+        <span class="hint">需宿主机可 SSH 免密登录该目标；容器部署时请改用卷挂载 + local 适配器</span>
+      </div>
+      <div v-if="publish.adapter === 'cloudflare'" class="field">
+        <label for="pub-cf">Cloudflare Pages 项目名</label>
+        <input id="pub-cf" v-model="publish.cfProject" class="input mono" type="text" placeholder="gleanlight" />
+        <span class="hint">在 docker-compose.yml 里配置 CLOUDFLARE_API_TOKEN 环境变量</span>
+      </div>
+      <button class="btn" type="button" :data-loading="savingPublish" @click="savePublish">保存发布设置</button>
+    </section>
+
+    <section class="panel">
+      <h2>数据与备份</h2>
+      <p class="muted small">
+        备份 = 数据库一致性快照 + 全部附件（tar.gz）。自动保留最近 {{ BACKUP_KEEP }} 份；数据目录 <span class="mono">./docker-data</span> 本身也可整目录拷贝迁移。
+      </p>
+      <div class="backup-head">
+        <button class="btn btn-primary btn-sm" type="button" :data-loading="backingUp" @click="createBackup">
+          {{ backingUp ? "备份中…" : "立即备份" }}
+        </button>
+      </div>
+      <table class="table" v-if="backups.length">
+        <thead>
+          <tr><th>文件</th><th>类型</th><th>大小</th><th>时间</th><th></th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="b in backups" :key="b.name">
+            <td class="mono small">{{ b.name }}</td>
+            <td><span class="badge">{{ b.kind === "archive" ? "完整归档" : "数据库" }}</span></td>
+            <td class="small">{{ fmtBytes(b.size) }}</td>
+            <td class="muted small">{{ b.createdAt.slice(0, 19).replace("T", " ") }}</td>
+            <td>
+              <div class="backup-ops">
+                <a class="btn btn-sm" :href="`/api/system/backups/${encodeURIComponent(b.name)}/download`">下载</a>
+                <button class="btn btn-sm btn-danger" type="button" @click="deleteBackup(b.name)">删</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else class="muted small">还没有备份。建议发布前或定期手动点一次「立即备份」。</p>
+    </section>
+
+    <section class="panel">
+      <h2>评论与统计</h2>
+      <p class="muted small">保存后重新发布才会在前台生效。</p>
+      <label class="check-row">
+        <input v-model="integrations.giscus.enable" type="checkbox" />
+        <span>启用评论（giscus，基于 GitHub Discussions，读者用 GitHub 账号留言）</span>
+      </label>
+      <div v-if="integrations.giscus.enable" class="grid-2">
+        <div class="field">
+          <label for="g-repo">仓库</label>
+          <input id="g-repo" v-model="integrations.giscus.repo" class="input mono" type="text" placeholder="l1kem/Gleanlight" />
+        </div>
+        <div class="field">
+          <label for="g-repo-id">Repo ID</label>
+          <input id="g-repo-id" v-model="integrations.giscus.repoId" class="input mono" type="text" />
+        </div>
+        <div class="field">
+          <label for="g-cat">Discussion 分类</label>
+          <input id="g-cat" v-model="integrations.giscus.category" class="input" type="text" placeholder="Announcements" />
+        </div>
+        <div class="field">
+          <label for="g-cat-id">Category ID</label>
+          <input id="g-cat-id" v-model="integrations.giscus.categoryId" class="input mono" type="text" />
+        </div>
+      </div>
+      <p class="hint muted small">ID 在 <span class="mono">giscus.app/zh-CN</span> 生成；只统计公开仓库的 Discussion。</p>
+
+      <h2 class="sub">访问统计（umami，自托管）</h2>
+      <div class="grid-2">
+        <div class="field">
+          <label for="u-src">统计脚本地址</label>
+          <input id="u-src" v-model="integrations.umami.src" class="input mono" type="url" placeholder="https://stats.example.com/script.js" />
+        </div>
+        <div class="field">
+          <label for="u-id">Website ID</label>
+          <input id="u-id" v-model="integrations.umami.websiteId" class="input mono" type="text" />
+        </div>
+      </div>
+      <p class="hint muted small">两项都填写才会注入统计脚本；未配置则前台完全零第三方请求。</p>
+      <button class="btn" type="button" :data-loading="savingIntegrations" @click="saveIntegrations">保存评论与统计</button>
+    </section>
   </div>
 </template>
 
@@ -297,6 +487,27 @@ async function checkUpdate(): Promise<void> {
   border-radius: var(--radius-sm);
   font-size: var(--text-xs);
   white-space: pre-wrap;
+}
+.backup-head {
+  margin-bottom: var(--space-sm);
+}
+.backup-ops {
+  display: flex;
+  gap: var(--space-2xs);
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin-bottom: var(--space-md);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+h2.sub {
+  margin-top: var(--space-lg);
+  font-size: var(--text-sm);
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
 }
 @media (max-width: 40rem) {
   .grid-2 {
