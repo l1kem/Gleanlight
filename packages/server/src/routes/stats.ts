@@ -73,4 +73,21 @@ export async function statsRoutes(app: FastifyInstance): Promise<void> {
       lastPublishAt: lastSuccess?.finished_at ?? null,
     };
   });
+
+  // 仪表盘概览：一次请求拿全计数（替代前端拉列表自己数）
+  app.get("/stats/overview", async () => {
+    const one = (sql: string) => (db.prepare(sql).get() as { c: number }).c;
+    return {
+      published: one("SELECT COUNT(*) AS c FROM posts WHERE status = 'published'"),
+      drafts: one("SELECT COUNT(*) AS c FROM posts WHERE status = 'draft'"),
+      scheduled: one(
+        "SELECT COUNT(*) AS c FROM posts WHERE scheduled_at IS NOT NULL AND scheduled_at > datetime('now')"
+      ),
+      topics: one("SELECT COUNT(*) AS c FROM topics"),
+      domains: one("SELECT COUNT(*) AS c FROM domains"),
+      media: one("SELECT COUNT(*) AS c FROM media"),
+      mediaBytes: one("SELECT COALESCE(SUM(size), 0) AS c FROM media"),
+      privatePosts: one("SELECT COUNT(*) AS c FROM posts WHERE private = 1"),
+    };
+  });
 }

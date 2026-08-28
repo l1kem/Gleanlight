@@ -2,6 +2,9 @@
 import MarkdownIt from "markdown-it";
 import anchor from "markdown-it-anchor";
 import taskLists from "markdown-it-task-lists";
+import footnote from "markdown-it-footnote";
+import texmath from "markdown-it-texmath";
+import katex from "katex";
 import hljs from "highlight.js";
 
 /**
@@ -27,7 +30,13 @@ const md: MarkdownIt = new MarkdownIt({
   },
 })
   .use(anchor, { slugify: slugifyZh, permalink: false })
-  .use(taskLists, { label: true });
+  .use(taskLists, { label: true })
+  .use(footnote)
+  .use(texmath, {
+    engine: katex,
+    delimiters: "dollars",
+    katexOptions: { output: "html", throwOnError: false },
+  });
 
 /** 中英混排标题 slug：保留中文，转小写、空格转连字符 */
 export function slugifyZh(s: string): string {
@@ -55,11 +64,15 @@ md.core.ruler.before("normalize", "uploads_prefix", (state) => {
   state.src = state.src.replace(/(\]\()(uploads\/[^)\s]+)(?=\))/g, "$1/$2");
 });
 
-// 代码块：印刷式框架（顶部语言标签行 + 上下细线），不画假窗口 chrome
+// 代码块：印刷式框架（顶部语言标签行 + 上下细线），不画假窗口 chrome。
+// mermaid 例外：输出可被前台 mermaid.run() 接管的容器。
 const defaultFence = md.renderer.rules.fence!;
 md.renderer.rules.fence = (tokens, idx, options, env, self) => {
   const token = tokens[idx];
   const lang = (token.info || "").trim().split(/\s+/)[0];
+  if (lang === "mermaid") {
+    return `<div class="mermaid">${md.utils.escapeHtml(token.content)}</div>`;
+  }
   const rendered = defaultFence(tokens, idx, options, env, self);
   return `<figure class="code" data-lang="${md.utils.escapeHtml(lang)}">${rendered}</figure>`;
 };

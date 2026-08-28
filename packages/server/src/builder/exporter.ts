@@ -2,7 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { db, getSetting } from "../db.js";
 import { MEDIA_DIR, PKG_SITE } from "../config.js";
-import type { SiteSettings } from "../routes/settings.js";
+import type { SiteSettings, IntegrationsSettings } from "../routes/settings.js";
+import { INTEGRATIONS_DEFAULT } from "../routes/settings.js";
 import { filterPublicStructure, selectPublicMedia } from "../lib/publication.js";
 
 /**
@@ -102,7 +103,10 @@ export function exportContent(): {
 
   writeJson(dataDir, "posts.json", exported);
   writeJson(dataDir, "structure.json", { domains, topics });
-  writeJson(dataDir, "site.json", site);
+  writeJson(dataDir, "site.json", {
+    ...site,
+    integrations: getSetting("integrations", INTEGRATIONS_DEFAULT),
+  });
   writeJson(dataDir, "tags.json", tags);
 
   // ── 附件同步：只发布公开文章实际引用的媒体。每次从干净暂存目录替换，
@@ -123,6 +127,14 @@ export function exportContent(): {
       if (!fs.existsSync(source)) continue;
       fs.copyFileSync(source, path.join(uploadsStage, item.stored_name));
       fs.copyFileSync(source, path.join(mediaStage, item.stored_name));
+      // 图片缩略图（thumbs/<stored>.webp）随附件一起进静态站
+      const thumb = path.join(MEDIA_DIR, "thumbs", `${item.stored_name}.webp`);
+      if (fs.existsSync(thumb)) {
+        fs.mkdirSync(path.join(uploadsStage, "thumbs"), { recursive: true });
+        fs.mkdirSync(path.join(mediaStage, "thumbs"), { recursive: true });
+        fs.copyFileSync(thumb, path.join(uploadsStage, "thumbs", `${item.stored_name}.webp`));
+        fs.copyFileSync(thumb, path.join(mediaStage, "thumbs", `${item.stored_name}.webp`));
+      }
       copiedMedia += 1;
     }
     replaceGeneratedDir(uploadsStage, path.join(publicDir, "uploads"));

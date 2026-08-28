@@ -33,6 +33,7 @@ import {
 import { statsRoutes } from "./routes/stats.js";
 import { wikiRoutes } from "./routes/wiki.js";
 import { versionRoutes } from "./routes/version.js";
+import { systemRoutes } from "./routes/system.js";
 import { requireAuth } from "./auth.js";
 import { renderMarkdown, extractToc } from "@gleanlight/markdown";
 
@@ -90,6 +91,9 @@ async function main(): Promise<void> {
   });
 
   // ── API 路由 ─────────────────────────────────────────────────
+  // 存活探针挂在 api 组外：compose healthcheck 用，不经鉴权/限流
+  app.get("/api/live", async () => ({ ok: true }));
+
   await app.register(
     async (api) => {
       await api.register(rateLimit, {
@@ -126,6 +130,7 @@ async function main(): Promise<void> {
       await api.register(statsRoutes);
       await api.register(wikiRoutes);
       await api.register(versionRoutes);
+      await api.register(systemRoutes);
 
       // Markdown 预览（与前台渲染同规则）
       api.post(

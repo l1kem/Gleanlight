@@ -70,6 +70,8 @@ export async function mediaRoutes(app: FastifyInstance): Promise<void> {
     const target = path.join(MEDIA_DIR, stored);
     const buffer = await file.toBuffer();
     await fs.promises.writeFile(target, buffer);
+    const isImage = file.mimetype.startsWith("image/");
+    if (isImage) await makeThumb(stored); // 失败静默：缩略图是加速项不是必需品
     const info = db
       .prepare("INSERT INTO media(filename, stored_name, mime, size) VALUES(?,?,?,?)")
       .run(file.filename, stored, file.mimetype, buffer.byteLength);
@@ -78,6 +80,7 @@ export async function mediaRoutes(app: FastifyInstance): Promise<void> {
       url: `/media/${stored}`,
       filename: file.filename,
       stored_name: stored,
+      thumb: isImage && hasThumb(stored) ? `/media/thumbs/${thumbName(stored)}` : null,
     });
   });
 
@@ -88,8 +91,31 @@ export async function mediaRoutes(app: FastifyInstance): Promise<void> {
       | undefined;
     if (!row) return reply.code(404).send({ error: "文件不存在" });
     db.prepare("DELETE FROM media WHERE id = ?").run(Number(id));
-    await fs.promises.rm(path.join(MEDIA_DIR, row.stored_name), { force: true });
+    await removeFiles(row.stored_name);
     return { ok: true };
+  });
+
+  // 批量删除：仍被引用的自动跳过（与 cleanup 同规则）
+  app.post("/media/batch-delete", async (request) => {
+    const { ids } = (request.body ?? {}) as { ids?: number[] };
+    if (!Array.isArray(ids) || ids.length === 0) return { deleted: 0, skipped: 0 };
+    const usage = computeUsage();
+    let deleted = 0;
+    let skipped = 0;
+    for (const id of ids.map(Number)) {
+      if ((usage.get(id) ?? []).length > 0) {
+        skipped += 1;
+        continue;
+      }
+      const row = db.prepare("SELECT stored_name FROM media WHERE id = ?").get(id) as
+        | { stored_name: string }
+        | undefined;
+      if (!row) continue;
+      db.prepare("DELETE FROM media WHERE id = ?").run(id);
+      await removeFiles(row.stored_name);
+      deleted += 1;
+    }
+    return { deleted, skipped };
   });
 
   // ── 引用关系：扫描全部文章正文里的 /media/ 引用 ──────────────
@@ -114,7 +140,11 @@ export async function mediaRoutes(app: FastifyInstance): Promise<void> {
   app.get("/media/usage", async () => {
     const usage = computeUsage();
     const items = (db.prepare("SELECT * FROM media ORDER BY id DESC").all() as MediaRow[]).map(
-      (m) => ({ ...m, refs: usage.get(m.id) ?? [] })
+      (m) => ({
+        ...m,
+        refs: usage.get(m.id) ?? [],
+        thumb: m.mime.startsWith("image/") && hasThumb(m.stored_name) ? `/media/thumbs/${thumbName(m.stored_name)}` : null,
+      })
     );
     return { items, unusedCount: items.filter((m) => m.refs.length === 0).length };
   });
@@ -133,11 +163,36 @@ export async function mediaRoutes(app: FastifyInstance): Promise<void> {
         | undefined;
       if (!row) continue;
       del.run(id);
-      await fs.promises.rm(path.join(MEDIA_DIR, row.stored_name), { force: true });
+      await removeFiles(row.stored_name);
       deleted += 1;
     }
     return { deleted };
   });
+}
+
+// ── 缩略图：thumbs/<stored>.webp（640 宽），由 sharp 生成 ─────────
+const THUMB_DIR = path.join(MEDIA_DIR, "thumbs");
+const thumbName = (stored: string): string => `${stored}.webp`;
+const thumbPath = (stored: string): string => path.join(THUMB_DIR, thumbName(stored));
+const hasThumb = (stored: string): boolean => fs.existsSync(thumbPath(stored));
+
+async function makeThumb(stored: string): Promise<void> {
+  try {
+    const { default: sharp } = await import("sharp");
+    fs.mkdirSync(THUMB_DIR, { recursive: true });
+    await sharp(path.join(MEDIA_DIR, stored))
+      .rotate()
+      .resize({ width: 640, withoutEnlargement: true })
+      .webp({ quality: 78 })
+      .toFile(thumbPath(stored));
+  } catch {
+    /* sharp 不可用/解码失败时跳过，原图仍可访问 */
+  }
+}
+
+async function removeFiles(stored: string): Promise<void> {
+  await fs.promises.rm(path.join(MEDIA_DIR, stored), { force: true });
+  await fs.promises.rm(thumbPath(stored), { force: true });
 }
 
 interface MediaRow {

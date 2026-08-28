@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
+import { spawn } from "node:child_process";
 import { PUBLIC_DIST } from "../../config.js";
+import { getSetting } from "../../db.js";
+import type { PublishSettings } from "../../routes/settings.js";
 
 /**
  * 部署适配器：把 site/dist 发布到静态托管目录。
@@ -56,8 +59,74 @@ export const adapters: Record<string, DeployAdapter> = {
   local: localAdapter,
 };
 
+/** 外部命令执行器：日志流式回传，非零退出抛错 */
+function runCommand(cmd: string, args: string[], onLog: (line: string) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, { shell: true, env: process.env });
+    let stderr = "";
+    child.stdout.on("data", (d: Buffer) => {
+      for (const line of d.toString().split("\n")) if (line.trim()) onLog(line);
+    });
+    child.stderr.on("data", (d: Buffer) => {
+      stderr += d.toString();
+      for (const line of d.toString().split("\n")) if (line.trim()) onLog(line);
+    });
+    child.on("error", reject);
+    child.on("close", (code) =>
+      code === 0 ? resolve() : reject(new Error(`${cmd} 退出码 ${code}\n${stderr.slice(-800)}`))
+    );
+  });
+}
+
+/** rsync：同步到远端目录（user@host:/path），需宿主机可 SSH 免密登录目标 */
+export const rsyncAdapter: DeployAdapter = {
+  name: "rsync",
+  async deploy(siteDist, onLog) {
+    const { rsyncTarget } = getSetting<PublishSettings>("publish", {
+      adapter: "local",
+      localDir: "",
+      rsyncTarget: "",
+      cfProject: "",
+    });
+    if (!rsyncTarget) throw new Error("未配置 rsync 目标（设置 → 发布 → 目标地址）");
+    onLog(`rsync → ${rsyncTarget}`);
+    await runCommand("rsync", ["-az", "--delete", `${siteDist}/`, rsyncTarget], onLog);
+    onLog(`已同步到 ${rsyncTarget}`);
+    return rsyncTarget;
+  },
+};
+
+/** Cloudflare Pages：npx wrangler pages deploy，需 CLOUDFLARE_API_TOKEN 环境变量 */
+export const cloudflareAdapter: DeployAdapter = {
+  name: "cloudflare",
+  async deploy(siteDist, onLog) {
+    const { cfProject } = getSetting<PublishSettings>("publish", {
+      adapter: "local",
+      localDir: "",
+      rsyncTarget: "",
+      cfProject: "",
+    });
+    if (!cfProject) throw new Error("未配置 Cloudflare Pages 项目名（设置 → 发布）");
+    if (!process.env.CLOUDFLARE_API_TOKEN) {
+      throw new Error("缺少 CLOUDFLARE_API_TOKEN 环境变量（docker-compose.yml 里配置）");
+    }
+    onLog(`wrangler pages deploy → ${cfProject}`);
+    await runCommand(
+      "npx",
+      ["-y", "wrangler@latest", "pages", "deploy", siteDist, "--project-name", cfProject],
+      onLog
+    );
+    onLog(`已部署到 Cloudflare Pages：${cfProject}`);
+    return `cloudflare-pages:${cfProject}`;
+  },
+};
+
 function clearDirectory(target: string): void {
   for (const entry of fs.readdirSync(target)) {
     fs.rmSync(path.join(target, entry), { recursive: true, force: true });
   }
 }
+
+// 适配器注册表：放在定义之后，便于按同一 DeployAdapter 接口扩展
+adapters.rsync = rsyncAdapter;
+adapters.cloudflare = cloudflareAdapter;

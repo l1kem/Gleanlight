@@ -71,7 +71,12 @@ export function startPublish(source: "manual" | "scheduled"): number {
     return running.id;
   }
 
-  const pub = getSetting<PublishSettings>("publish", { adapter: "local", localDir: "" });
+  const pub = getSetting<PublishSettings>("publish", {
+    adapter: "local",
+    localDir: "",
+    rsyncTarget: "",
+    cfProject: "",
+  });
   const adapter = adapters[pub.adapter] ?? adapters.local;
 
   const info = db

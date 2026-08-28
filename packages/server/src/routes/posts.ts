@@ -288,4 +288,45 @@ export async function postRoutes(app: FastifyInstance): Promise<void> {
       .all();
     return { posts, domains, topics };
   });
+
+  // ── 批量操作：发布 / 转草稿 / 移动主题 / 删除 ─────────────────
+  app.post("/posts/batch", async (request, reply) => {
+    const { action, ids, topic_id } = (request.body ?? {}) as {
+      action?: string;
+      ids?: number[];
+      topic_id?: number | null;
+    };
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return reply.code(400).send({ error: "未选择文章" });
+    }
+    const list = ids.map(Number).filter(Number.isFinite);
+    const marks = list.map(() => "?").join(",");
+    let affected = 0;
+    switch (action) {
+      case "publish":
+        affected = db
+          .prepare(
+            `UPDATE posts SET status='published', published_at=COALESCE(published_at, datetime('now')),
+             updated_at=datetime('now') WHERE id IN (${marks})`
+          )
+          .run(...list).changes;
+        break;
+      case "draft":
+        affected = db
+          .prepare(`UPDATE posts SET status='draft', updated_at=datetime('now') WHERE id IN (${marks})`)
+          .run(...list).changes;
+        break;
+      case "move":
+        affected = db
+          .prepare(`UPDATE posts SET topic_id=?, updated_at=datetime('now') WHERE id IN (${marks})`)
+          .run(topic_id ?? null, ...list).changes;
+        break;
+      case "delete":
+        affected = db.prepare(`DELETE FROM posts WHERE id IN (${marks})`).run(...list).changes;
+        break;
+      default:
+        return reply.code(400).send({ error: `未知操作：${action}` });
+    }
+    return { ok: true, affected };
+  });
 }

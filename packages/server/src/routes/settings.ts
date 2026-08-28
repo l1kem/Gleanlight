@@ -20,9 +20,22 @@ export interface AiSettings {
 }
 
 export interface PublishSettings {
-  adapter: "local"; // 预留 rsync / cloudflare
+  adapter: "local" | "rsync" | "cloudflare";
   localDir: string;
+  rsyncTarget: string; // user@host:/srv/blog  （rsync 适配器）
+  cfProject: string; // Cloudflare Pages 项目名
 }
+
+/** 前台第三方集成：评论（giscus）与统计（umami），发布时随 site.json 注入静态站 */
+export interface IntegrationsSettings {
+  giscus: { enable: boolean; repo: string; repoId: string; category: string; categoryId: string };
+  umami: { src: string; websiteId: string };
+}
+
+export const INTEGRATIONS_DEFAULT: IntegrationsSettings = {
+  giscus: { enable: false, repo: "", repoId: "", category: "", categoryId: "" },
+  umami: { src: "", websiteId: "" },
+};
 
 const SITE_DEFAULT: SiteSettings = {
   title: "拾光集",
@@ -48,11 +61,18 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
     const publish = getSetting<PublishSettings>("publish", {
       adapter: "local",
       localDir: "",
+      rsyncTarget: "",
+      cfProject: "",
     });
+    const integrations = {
+      ...INTEGRATIONS_DEFAULT,
+      ...getSetting<Partial<IntegrationsSettings>>("integrations", {}),
+    };
     return {
       site,
       ai: { ...ai, apiKey: "", hasKey: Boolean(ai.apiKey) }, // 不回传明文
       publish,
+      integrations,
     };
   });
 
@@ -61,6 +81,7 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
       site?: Partial<SiteSettings>;
       ai?: Partial<AiSettings>;
       publish?: Partial<PublishSettings>;
+      integrations?: Partial<IntegrationsSettings>;
     };
     if (b.site) {
       const current = { ...SITE_DEFAULT, ...getSetting<Partial<SiteSettings>>("site", {}) };
@@ -77,8 +98,17 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
       setSetting("ai", { ...current, ...b.ai, apiKey });
     }
     if (b.publish) {
-      const current = getSetting<PublishSettings>("publish", { adapter: "local", localDir: "" });
+      const current = getSetting<PublishSettings>("publish", {
+        adapter: "local",
+        localDir: "",
+        rsyncTarget: "",
+        cfProject: "",
+      });
       setSetting("publish", { ...current, ...b.publish });
+    }
+    if (b.integrations) {
+      const current = getSetting<IntegrationsSettings>("integrations", INTEGRATIONS_DEFAULT);
+      setSetting("integrations", { ...current, ...b.integrations });
     }
     return { ok: true };
   });
